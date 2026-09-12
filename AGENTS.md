@@ -67,6 +67,15 @@ bd close <id>         # Complete work
 - Run `bd prime` for detailed command reference and session close protocol
 - Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
 
+## Git workflow
+
+- `main` is the formal-release branch and must remain release-ready.
+- Implement on `feature`; create small, verified commits there before any merge to `main`.
+- Use conventional commit prefixes such as `feat:`, `fix:`, `test:`, `docs:`, and `chore:`.
+- Before and after a change, inspect `git status`, the relevant diff, and focused verification.
+- Never stage, commit, discard, or otherwise mix pre-existing uncommitted changes unless the user explicitly authorizes their inclusion.
+- Manage push, merge, tags, and release history when the task requires them. Remote synchronization still requires separate user authorization.
+
 **Architecture in one line:** issues live in a local Dolt DB; sync uses `refs/dolt/data` on your git remote; `.beads/issues.jsonl` is a passive export. See https://github.com/gastownhall/beads/blob/main/docs/SYNC_CONCEPTS.md for details and anti-patterns.
 
 ## Session Completion
