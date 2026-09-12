@@ -6,7 +6,7 @@ Draft — D07〜D14の人間決定ゲートを順番に閉じるまで実装開�
 
 ## Objective
 
-OBO Lean MVPのP0-P1 Core Promise Proofを、iPhone/TestFlight向けの小さな実装として再現可能に開始できる状態へ定義する。既に確定した認証・測定・iOS配布・ツールチェーン・コマンド境界・感度preflightを土台に、残りのAI、Receipt/配信、Scheduler、Push、Privacy、P1運用、レポート、SMTP委託境界を決定記録へ落とす。
+OBO Lean MVPのP0-P1 Core Promise Proofを、iPhone/TestFlight向けの小さな実装として再現可能に開始できる状態へ定義する。P1のCore Captureはテキストのみとし、Screenshot/Photo/PDF/Voice/visionは対象外とする。既に確定した認証・測定・iOS配布・ツールチェーン・コマンド境界・感度preflightを土台に、残りのAI、Receipt/配信、Scheduler、Push、Privacy、P1運用、レポート、SMTP委託境界を決定記録へ落とす。
 
 利用者は記名された成人P1参加者であり、プロダクトの成功はP1 Exit Artifactで測る。P2以降の機能や商用化はこのSPECの対象外である。
 
@@ -36,7 +36,7 @@ Decision order is `D07 → D08 → D09 → D10 → D11/D12 → D13`; D14 must be
 
 Each item below is a human gate. A value absent from the source pack remains `未決` until its own ADR is accepted.
 
-- **D07 / `ai-data-boundary`**: provider, model, processing region, purpose, zero/limited retention, no-training/no-human-review terms, timeout/retry, token/cost unit, and `cost_per_eligible_capture` / `cost_per_valid_soc` aggregation. Raw is sent only after D06 `PRIVATE` and active consent.
+- **D07 / `ai-data-boundary`**: D07-A（Mistral AI API / pinned `mistral-small-2603` / P1 text-only / Free modeは合成・匿名化fixtureのみ）を確定。D07-Bとして processing region, purpose, zero/limited retention, no-training/no-human-review terms, timeout/retry, token/cost unit, and `cost_per_eligible_capture` / `cost_per_valid_soc` aggregation remains `未決`. Raw is sent only after D06 `PRIVATE` and active consent.
 - **D08 / `delivery-proof`**: receipt basis revision, immutable ACK semantics, correction invalidation, semantic delivery key `(loop_id, basis_revision, reason_code, scheduled_evaluation_at)`, unique constraint, and stale-send revalidation.
 - **D09 / `delivery-proof`**: Cron cadence, bounded batch, per-loop lock, retry ceiling/backoff, and a decision table for ACT/SILENCE/DEFER. Closed/satisfied/retired loops never create deliveries.
 - **D10 / `attention-client`**: Push qualification, token lifecycle, permission denied behavior, in-app fallback, provider failure UX, and no-raw payload contract.
@@ -109,14 +109,23 @@ Use strict TypeScript, named domain states, UTC timestamps, append-only semantic
 
 ## Open Questions
 
-The current critical gate is D07. Do not choose an AI provider, region, model, retention term, or cost ceiling from inference; resolve those with the next human decision before writing ADR-007.
+The current critical gate is D07-B. D07-A provider/model and P1 text-only scope are accepted, but do not infer region, retention term, human-review terms, timeout/retry, or cost ceiling before the next human decision and ADR-007.
+
+## D07-A Decision Gate (accepted 2026-09-12)
+
+- P1 provider: Mistral AI API.
+- P1 model: pinned `mistral-small-2603` (do not use `-latest` alias for the contract).
+- P1 input modality: text only; PDF/image/vision is outside the P1 Core Proof.
+- Test mode: Mistral Free mode may be used only with synthetic or de-identified fixtures. Participant Raw/PII is never sent through Free mode.
+- P1 fallback: none. A quality failure reopens D07 rather than silently adding a second provider/model.
+- This is a partial D07 decision. ADR-007 is not accepted until D07-B closes the remaining data, region, retention, and cost terms.
 
 ## Loop A Review (2026-09-12)
 
 - Correctness: the objective and success criteria map to the existing P0-P1 Epic and ADR-001〜006; no product meaning is redefined.
 - Completeness: objective, commands, project structure, code style, testing strategy, boundaries, capability map, and remaining decision contracts are present.
 - Boundaries: P2+, external provider choices, live participant data, and remote state are explicitly excluded until their gates pass.
-- Critical gap: D07 provider/region/model/retention/cost values are intentionally unresolved and require the next human gate. This is the only blocker to writing ADR-007; it is not filled by inference.
+- Critical gap: D07-B region/retention/human-review/timeout-retry/cost values remain intentionally unresolved and require the next human gate. Provider/model and text-only scope are fixed by D07-A; ADR-007 remains unaccepted until D07-B closes.
 
 ## Loop B Review (2026-09-12)
 
@@ -124,4 +133,4 @@ The current critical gate is D07. Do not choose an AI provider, region, model, r
 - Atomicity: decision issues remain separate from L00-L12 implementation slices; no new duplicate tracker was created.
 - Dependencies: `bd dep cycles` passes; D14 blocks L00 and D07 precedes D13 as required.
 - Coverage: the stale `tasks/todo.md` pointers in L00-L12 were replaced with the canonical Ticket Map and relevant ADR references in Beads.
-- Verdict: plan is ready for the human D07 decision gate; implementation remains locked.
+- Verdict: plan is ready for the human D07-B decision gate; implementation remains locked.

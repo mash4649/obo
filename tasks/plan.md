@@ -57,6 +57,7 @@ D01-D13の回答を決定記録にし、P0-P1外を有効化せず、L00の依�
 
 - Loop A（spec）: `SPEC.md` に固定済みADR、残りD07-D14の能力境界、コマンド、構造、テスト、禁止境界を記録する。
 - Loop A review: provider/保持/数値/運用責任を推測で埋めず、D07を次の人間ゲートにする。
+- D07-A（provider/model/P1 text-only scope）は2026-09-12に確定。D07-B（region/retention/human-review/timeout-retry/cost）は未決のまま残す。
 - Loop B（plan）: 既存Beads `obo-main-gil.7-.13` と `.28` を依存順に使い、重複タスクを作らない。
 - Loop B review: `bd dep cycles`、各BeadのAcceptance/Verification、D14→L00のブロッカーを確認する。
 
