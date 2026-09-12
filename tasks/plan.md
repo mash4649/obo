@@ -21,7 +21,7 @@
 ```text
 D01--D04 ─┐
 D05--D10 ─┼─> L00 -> L01 -> L02 -> L03 -> L04 -> L05 -> L06
-D11--D13 ─┘                                      -> L07 -> L08 -> L09 -> L10 -> L11 -> L12 -> MVP-01
+D11--D14 ─┘                                      -> L07 -> L08 -> L09 -> L10 -> L11 -> L12 -> MVP-01
 ```
 
 - D01 はメトリクス/成熟/SOC の親契約確認であり、L12 を必ずブロックします。
@@ -45,6 +45,7 @@ D11--D13 ─┘                                      -> L07 -> L08 -> L09 -> L10
 - `obo-main-gil.11` D11: 削除/保持/匿名化とログ・クラッシュ報告の運用を確定
 - `obo-main-gil.12` D12: P1参加者募集・同意文言・インシデント判定を確定
 - `obo-main-gil.13` D13: P1レポートの分母・集計SQL・意思決定責任者を確定
+- `obo-main-gil.28` D14: 外部P1参加者向けtransactional email/SMTP事業者と保持条件を確定
 
 ### Checkpoint D
 
@@ -84,7 +85,7 @@ MVPの完成はP1の実施とExit Artifactの確定までとする。`PROCEED P2
 | ID | 状態 | 根拠 | 影響 | 解消方針 |
 |---|---|---|---|---|
 | U01 | 解決済み | P1 固有の成熟期限・eligible predicate・Activation分母・legitimate Retire証跡を ADR-001 で固定 | P1 の成熟、valid SOC/Retire、分母を一意に集計できる | `docs/decisions/ADR-001-p1-measurement-contract.md` |
-| U02 | 未記載 | `authenticated adult` と一つの passwordless email mode はあるが、成人確認方法、Magic Link/OTP、失効/再認証条件は未定 | L01 の安全性とUX | D03 |
+| U02 | 解決済み | Email OTP、成人自己申告、同意撤回、破壊的操作のrecent-authをADR-003で固定 | L01 の安全性とUX | `docs/decisions/ADR-003-p1-auth-consent.md` |
 | U03 | 部分解決 | P1のiPhone/TestFlight/実機検証は ADR-002 で固定。依存version setとCI実行環境は未定 | L00、L08、L11 | D02は `docs/decisions/ADR-002-p1-ios-distribution.md`、D04は継続 |
 | U04 | 未記載 | AIは「一つの承認済みプロバイダ」だが、プロバイダ、モデル、リージョン、利用目的、送信保持条件が未定 | L03/L05 のデータ境界 | D06/D07 |
 | U05 | 未記載 | `obvious` SECRET/SENSITIVE 判定と安全な拒否/hold の具体規則・誤判定時UXが未定 | L03 の allow/deny テスト | D06 |
@@ -96,6 +97,7 @@ MVPの完成はP1の実施とExit Artifactの確定までとする。`PROCEED P2
 | U11 | 未記載 | Account削除の「release privacy policy」、保持期間、匿名化対象、ログ/クラッシュ報告ベンダーが未定 | L11 | D11 |
 | U12 | 未記載 | P1は5参加者/10 loop等を規定するが、募集/同意文言、インシデントのcritical判定、レポート責任者が未定 | L12 とPASS判定 | D12/D13 |
 | U13 | 解釈要確認 | L02 は「10-table Lean contract」を掲げる一方、Data Contract は deliveries/device/telemetry/Cron を LM20、L08 は LM20 attention migration と置く | L02/L08の移行境界 | D05で LM00/LM10/LM20 の正確なテーブル割当を決定 |
+| U14 | 未記載 | Supabase既定メール送信は外部P1参加者へのOTP送信に使えず、custom SMTPの事業者、処理地域、保持・削除条件が未定 | L01 と外部P1ログイン | D14 |
 
 ## Gate-locked backlog（作成・実装しない）
 
