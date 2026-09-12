@@ -85,7 +85,7 @@ MVPの完成はP1の実施とExit Artifactの確定までとする。`PROCEED P2
 |---|---|---|---|---|
 | U01 | 解決済み | P1 固有の成熟期限・eligible predicate・Activation分母・legitimate Retire証跡を ADR-001 で固定 | P1 の成熟、valid SOC/Retire、分母を一意に集計できる | `docs/decisions/ADR-001-p1-measurement-contract.md` |
 | U02 | 未記載 | `authenticated adult` と一つの passwordless email mode はあるが、成人確認方法、Magic Link/OTP、失効/再認証条件は未定 | L01 の安全性とUX | D03 |
-| U03 | 未記載 | Expo/RN/Supabase はバージョン下限のみ。iOS/Android 対象、配布先、CI実行環境も未定 | L00、L08、L11 | D02/D04 |
+| U03 | 部分解決 | P1のiPhone/TestFlight/実機検証は ADR-002 で固定。依存version setとCI実行環境は未定 | L00、L08、L11 | D02は `docs/decisions/ADR-002-p1-ios-distribution.md`、D04は継続 |
 | U04 | 未記載 | AIは「一つの承認済みプロバイダ」だが、プロバイダ、モデル、リージョン、利用目的、送信保持条件が未定 | L03/L05 のデータ境界 | D06/D07 |
 | U05 | 未記載 | `obvious` SECRET/SENSITIVE 判定と安全な拒否/hold の具体規則・誤判定時UXが未定 | L03 の allow/deny テスト | D06 |
 | U06 | 未記載 | command path は Edge Function/PostgreSQL function のいずれも可とされ、service-only Raw read の実行主体が未定 | L02-L05 のRLS回避権限 | D05 |
