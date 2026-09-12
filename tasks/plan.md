@@ -88,15 +88,15 @@ MVPの完成はP1の実施とExit Artifactの確定までとする。`PROCEED P2
 | U02 | 解決済み | Email OTP、成人自己申告、同意撤回、破壊的操作のrecent-authをADR-003で固定 | L01 の安全性とUX | `docs/decisions/ADR-003-p1-auth-consent.md` |
 | U03 | 部分解決 | P1のiPhone/TestFlight/実機検証は ADR-002 で固定。依存version setとCI実行環境は未定 | L00、L08、L11 | D02は `docs/decisions/ADR-002-p1-ios-distribution.md`、D04は継続 |
 | U04 | 未記載 | AIは「一つの承認済みプロバイダ」だが、プロバイダ、モデル、リージョン、利用目的、送信保持条件が未定 | L03/L05 のデータ境界 | D06/D07 |
-| U05 | 未記載 | `obvious` SECRET/SENSITIVE 判定と安全な拒否/hold の具体規則・誤判定時UXが未定 | L03 の allow/deny テスト | D06 |
-| U06 | 未記載 | command path は Edge Function/PostgreSQL function のいずれも可とされ、service-only Raw read の実行主体が未定 | L02-L05 のRLS回避権限 | D05 |
+| U05 | 解決済み | ADR-006で4つのP1 scope、SECRET/SENSITIVE/UNCLASSIFIEDの決定的preflight、2,000文字上限、FAILED_SAFE/hold UXを固定 | L03 の allow/deny テスト | `docs/decisions/ADR-006-p1-sensitivity-preflight.md` |
+| U06 | 解決済み | ADR-005でJWT必須の単一command Function、secret専用processor/scheduler、service keyの閉域利用を固定 | L02-L05 のRLS回避権限 | `docs/decisions/ADR-005-command-boundary-and-migrations.md` |
 | U07 | 契約不足 | `deliveries` は loop revision + reason + scheduled evaluation の一意性を要求するが、その3値/semantic key の列が定義されていない | L07-L08 の重複/ stale配信防止をDBで証明できない | D08 で列と一意制約を契約へ追加/確定 |
 | U08 | 未記載 | current receipt basis/revision の保存形式、ACK の再送・訂正後の無効化規則が未定 | L06 Activation の正しさ | D08 |
 | U09 | 未記載 | bounded batch、Cron頻度、ロック方式、失敗/再試行、ACT/SILENCE/DEFER判定規則が未定 | L07 の通知品質/負荷 | D09 |
 | U10 | 未記載 | Expo Push は初期利用とあるが、資格情報、Push有効化時期、通知許可拒否時のin-app代替、controlled-proof tolerance が未定 | L08 | D10 |
 | U11 | 未記載 | Account削除の「release privacy policy」、保持期間、匿名化対象、ログ/クラッシュ報告ベンダーが未定 | L11 | D11 |
 | U12 | 未記載 | P1は5参加者/10 loop等を規定するが、募集/同意文言、インシデントのcritical判定、レポート責任者が未定 | L12 とPASS判定 | D12/D13 |
-| U13 | 解釈要確認 | L02 は「10-table Lean contract」を掲げる一方、Data Contract は deliveries/device/telemetry/Cron を LM20、L08 は LM20 attention migration と置く | L02/L08の移行境界 | D05で LM00/LM10/LM20 の正確なテーブル割当を決定 |
+| U13 | 解決済み | ADR-005でLM00/LM10/LM20/LM30の正確なテーブル割当とL02/L08の追加境界を固定 | L02/L08の移行境界 | `docs/decisions/ADR-005-command-boundary-and-migrations.md` |
 | U14 | 未記載 | Supabase既定メール送信は外部P1参加者へのOTP送信に使えず、custom SMTPの事業者、処理地域、保持・削除条件が未定 | L01 と外部P1ログイン | D14 |
 
 ## Gate-locked backlog（作成・実装しない）
