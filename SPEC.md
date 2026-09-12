@@ -36,7 +36,7 @@ Decision order is `D07 → D08 → D09 → D10 → D11/D12 → D13`; D14 must be
 
 Each item below is a human gate. A value absent from the source pack remains `未決` until its own ADR is accepted.
 
-- **D07 / `ai-data-boundary`**: D07-A（Mistral AI API / pinned `mistral-small-2603` / Global endpoint / P1 text-only / Free modeは合成・匿名化fixtureのみ）を確定。D07-Bとして purpose, zero/limited retention, no-training/no-human-review terms, timeout/retry, token/cost unit, and `cost_per_eligible_capture` / `cost_per_valid_soc` aggregation remains `未決`. Raw is sent only after D06 `PRIVATE` and active consent.
+- **D07 / `ai-data-boundary`**: D07-Aのprovider/model選定を再オープンし、Mistral / Gemini / OpenAI / Groqを候補とする。開発・比較の無料枠は合成・匿名化fixture専用、P1参加者データは有料プランとtraining opt-out、ZDRまたは同等の保持制御を確認した候補だけに送る。外部AIへは、Rawからローカルで直接識別子を置換・除去したテキストだけを送信することを確定する。対象項目、置換方式、誤検知時の扱いは未決とし、D07-Bの purpose, no-training/no-human-review terms, timeout/retry, token/cost unit, and `cost_per_eligible_capture` / `cost_per_valid_soc` aggregationと一緒に詰める。D06 `PRIVATE`とactive consentの前提は維持する。
 - **D08 / `delivery-proof`**: receipt basis revision, immutable ACK semantics, correction invalidation, semantic delivery key `(loop_id, basis_revision, reason_code, scheduled_evaluation_at)`, unique constraint, and stale-send revalidation.
 - **D09 / `delivery-proof`**: Cron cadence, bounded batch, per-loop lock, retry ceiling/backoff, and a decision table for ACT/SILENCE/DEFER. Closed/satisfied/retired loops never create deliveries.
 - **D10 / `attention-client`**: Push qualification, token lifecycle, permission denied behavior, in-app fallback, provider failure UX, and no-raw payload contract.
@@ -91,7 +91,7 @@ Use strict TypeScript, named domain states, UTC timestamps, append-only semantic
 - Security: own-account allow, cross-account deny, client Raw deny, direct outcome-write deny, JWT/secret boundary checks.
 - AI: SECRET/SENSITIVE/UNCLASSIFIED adapter-call count is zero; only explicitly allowed PRIVATE fixture reaches the adapter.
 - Delivery: revision mismatch, duplicate semantic key, stale loop, retry ceiling and no-raw payload tests.
-- Privacy: deletion blocks processing, redaction fixtures contain no Raw/token/PII, and consent withdrawal stops all work.
+- Privacy: deletion blocks processing, redaction fixtures contain no Raw/token/PII, provider adapter spies never observe direct identifiers, deny/error fixtures produce zero adapter calls, and consent withdrawal stops all work.
 - Release: CI command set passes from clean checkout; real-device/TestFlight evidence is separate and follows ADR-002.
 
 ## Boundaries
@@ -109,25 +109,39 @@ Use strict TypeScript, named domain states, UTC timestamps, append-only semantic
 
 ## Open Questions
 
-The current critical gate is D07-B. D07-A provider/model, Global endpoint, and P1 text-only scope are accepted, but do not infer retention term, human-review terms, timeout/retry, or cost ceiling before the next human decision and ADR-007.
+The current critical gate is D07-A provider/model selection plus the concrete redaction contract. The previous Mistral/Global choice is provisional and reopened for comparison with Gemini, OpenAI, and Groq. Do not infer provider, model, retention, human-review terms, timeout/retry, cost ceiling, identifier categories, replacement format, or redaction-failure behavior before the benchmark and next human decision.
 
-## D07-A Decision Gate (accepted 2026-09-12)
+## D07-A Working Shortlist (reopened 2026-09-13)
 
-- P1 provider: Mistral AI API.
-- P1 model: pinned `mistral-small-2603` (do not use `-latest` alias for the contract).
-- P1 endpoint: Global `api.mistral.ai`; no regional processing guarantee and no regional surcharge.
+- P1 provider candidates: Mistral AI API, Gemini API, OpenAI API, and Groq API.
+- P1 model and endpoint: `未決`; the earlier Mistral `mistral-small-2603` / Global proposal is a benchmark candidate, not an accepted contract.
 - P1 input modality: text only; PDF/image/vision is outside the P1 Core Proof.
-- Test mode: Mistral Free mode may be used only with synthetic or de-identified fixtures. Participant Raw/PII is never sent through Free mode.
-- Optional quality comparison: Groq or Gemini may be used only with synthetic/de-identified fixtures; record the actual model/provider per run. Neither is a P1 fallback.
-- P1 fallback: none. A quality failure reopens D07 rather than silently adding a second provider/model.
-- This is a partial D07 decision. ADR-007 is not accepted until D07-B closes the remaining data, region, retention, and cost terms.
+- Development/comparison: free tiers may be used only with synthetic or de-identified fixtures; participant Raw/PII is never sent through a free tier.
+- P1 participant traffic: paid tier only, with provider-specific training opt-out and ZDR/equivalent retention control verified before activation.
+- External-AI input boundary: direct identifiers are locally removed or replaced before any request. The identifier list, replacement format, and fail-closed behavior remain `未決`; until those are accepted, no participant/provider traffic starts.
+- Evaluation: record provider, exact model ID, endpoint, latency, output validity, interpretation quality, and token cost per fixture run.
+- P1 fallback: none. A quality or policy failure reopens D07 rather than silently adding a second provider/model.
+- ADR-007 remains unaccepted until the candidate benchmark and D07-B data contract are closed.
+
+## D07-R Direct-Identifier Redaction Draft (not accepted)
+
+The following is a planning draft for the accepted high-level boundary; it is not yet an implementation contract.
+
+- Candidate direct-identifier categories: personal names, email addresses, phone numbers, postal addresses, account/user/device identifiers, and URLs, file paths, or filenames containing identifiers.
+- The redaction boundary is server-side and must run before the provider adapter. The adapter must never receive the original Raw text as a fallback.
+- A detector miss, ambiguous match, unsupported category, or redaction error must fail closed: no external-AI request; keep the capture local/held and show a generic re-entry path.
+- D06 SECRET/SENSITIVE/UNCLASSIFIED rejection remains authoritative and is not replaced by this redaction step.
+- Still `未決`: exact category grammar, Japanese name/address detection strategy, remove-versus-placeholder behavior, placeholder format, false-positive tolerance, and the fixture threshold for proving that adapter input contains no direct identifier.
+
+The Japanese name/address items are intentionally candidates only. P1 must not claim that free-form names or addresses are removed until a deterministic or explicitly bounded strategy and its fail-closed tests are accepted.
 
 ## Loop A Review (2026-09-12)
 
 - Correctness: the objective and success criteria map to the existing P0-P1 Epic and ADR-001〜006; no product meaning is redefined.
 - Completeness: objective, commands, project structure, code style, testing strategy, boundaries, capability map, and remaining decision contracts are present.
 - Boundaries: P2+, external provider choices, live participant data, and remote state are explicitly excluded until their gates pass.
-- Critical gap: D07-B retention/human-review/timeout-retry/cost values remain intentionally unresolved and require the next human gate. Provider/model, Global endpoint, and text-only scope are fixed by D07-A; ADR-007 remains unaccepted until D07-B closes.
+- Critical gap: D07-A provider/model/endpoint and D07-B retention/human-review/timeout-retry/cost values remain intentionally unresolved and require the next human gate. P1 text-only scope is fixed; ADR-007 remains unaccepted.
+- Redaction review: the high-level no-direct-identifier boundary is accepted, but Japanese name/address detection and the exact fail-closed contract remain critical D07 blockers. No participant/provider traffic is allowed until these are accepted.
 
 ## Loop B Review (2026-09-12)
 
@@ -135,4 +149,4 @@ The current critical gate is D07-B. D07-A provider/model, Global endpoint, and P
 - Atomicity: decision issues remain separate from L00-L12 implementation slices; no new duplicate tracker was created.
 - Dependencies: `bd dep cycles` passes; D14 blocks L00 and D07 precedes D13 as required.
 - Coverage: the stale `tasks/todo.md` pointers in L00-L12 were replaced with the canonical Ticket Map and relevant ADR references in Beads.
-- Verdict: plan is ready for the human D07-B decision gate; implementation remains locked.
+- Verdict: plan is ready for the reopened human D07-A provider comparison; implementation remains locked.
