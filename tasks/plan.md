@@ -12,6 +12,8 @@
 
 ## 根拠と権限
 
+- 定義ループの仕様は `SPEC.md`。このファイルは依存構造とBeads IDの索引であり、状態の正はBeadsに置く。
+
 - 製品意味・信頼・F-1測定は、パック外の `OBO Source of Truth v0.9.4` が最上位権限です。
 - P0-P1 の物理実装順は `OBO Lean MVP / Core Proof - Phased Implementation Master v1.1`、スキーマ/コマンドは Lean Data Contract、既存作業単位は Ticket Map に従います。
 - この計画は Ticket Map の L00-L12 を細分化せず順序・検証を保持し、その前に未決事項を解消するタスクを置きます。
@@ -51,6 +53,13 @@ D11--D14 ─┘                                      -> L07 -> L08 -> L09 -> L10
 
 D01-D13の回答を決定記録にし、P0-P1外を有効化せず、L00の依存をすべて解消する。
 
+### Definition loop review
+
+- Loop A（spec）: `SPEC.md` に固定済みADR、残りD07-D14の能力境界、コマンド、構造、テスト、禁止境界を記録する。
+- Loop A review: provider/保持/数値/運用責任を推測で埋めず、D07を次の人間ゲートにする。
+- Loop B（plan）: 既存Beads `obo-main-gil.7-.13` と `.28` を依存順に使い、重複タスクを作らない。
+- Loop B review: `bd dep cycles`、各BeadのAcceptance/Verification、D14→L00のブロッカーを確認する。
+
 ### Phase P0-P1: Ticket Map 実装
 
 - `obo-main-gil.14` L00: Repository and implementation binding
@@ -87,7 +96,7 @@ MVPの完成はP1の実施とExit Artifactの確定までとする。`PROCEED P2
 | U01 | 解決済み | P1 固有の成熟期限・eligible predicate・Activation分母・legitimate Retire証跡を ADR-001 で固定 | P1 の成熟、valid SOC/Retire、分母を一意に集計できる | `docs/decisions/ADR-001-p1-measurement-contract.md` |
 | U02 | 解決済み | Email OTP、成人自己申告、同意撤回、破壊的操作のrecent-authをADR-003で固定 | L01 の安全性とUX | `docs/decisions/ADR-003-p1-auth-consent.md` |
 | U03 | 部分解決 | P1のiPhone/TestFlight/実機検証は ADR-002 で固定。依存version setとCI実行環境は未定 | L00、L08、L11 | D02は `docs/decisions/ADR-002-p1-ios-distribution.md`、D04は継続 |
-| U04 | 未記載 | AIは「一つの承認済みプロバイダ」だが、プロバイダ、モデル、リージョン、利用目的、送信保持条件が未定 | L03/L05 のデータ境界 | D06/D07 |
+| U04 | 未記載 | AIは「一つの承認済みプロバイダ」だが、プロバイダ、モデル、リージョン、利用目的、送信保持条件が未定 | L03/L05 のデータ境界 | D07 |
 | U05 | 解決済み | ADR-006で4つのP1 scope、SECRET/SENSITIVE/UNCLASSIFIEDの決定的preflight、2,000文字上限、FAILED_SAFE/hold UXを固定 | L03 の allow/deny テスト | `docs/decisions/ADR-006-p1-sensitivity-preflight.md` |
 | U06 | 解決済み | ADR-005でJWT必須の単一command Function、secret専用processor/scheduler、service keyの閉域利用を固定 | L02-L05 のRLS回避権限 | `docs/decisions/ADR-005-command-boundary-and-migrations.md` |
 | U07 | 契約不足 | `deliveries` は loop revision + reason + scheduled evaluation の一意性を要求するが、その3値/semantic key の列が定義されていない | L07-L08 の重複/ stale配信防止をDBで証明できない | D08 で列と一意制約を契約へ追加/確定 |
