@@ -83,7 +83,7 @@ MVPの完成はP1の実施とExit Artifactの確定までとする。`PROCEED P2
 
 | ID | 状態 | 根拠 | 影響 | 解消方針 |
 |---|---|---|---|---|
-| U01 | 契約不足 | 最上位の v0.9.4 は参照できるが、P1 固有の成熟期限・eligible predicate・Activation分母・legitimate Retire証跡は定義していない | P1 の成熟、valid SOC/Retire、分母を確定できない | D01 でP1測定補足を決定記録として採否を記録 |
+| U01 | 解決済み | P1 固有の成熟期限・eligible predicate・Activation分母・legitimate Retire証跡を ADR-001 で固定 | P1 の成熟、valid SOC/Retire、分母を一意に集計できる | `docs/decisions/ADR-001-p1-measurement-contract.md` |
 | U02 | 未記載 | `authenticated adult` と一つの passwordless email mode はあるが、成人確認方法、Magic Link/OTP、失効/再認証条件は未定 | L01 の安全性とUX | D03 |
 | U03 | 未記載 | Expo/RN/Supabase はバージョン下限のみ。iOS/Android 対象、配布先、CI実行環境も未定 | L00、L08、L11 | D02/D04 |
 | U04 | 未記載 | AIは「一つの承認済みプロバイダ」だが、プロバイダ、モデル、リージョン、利用目的、送信保持条件が未定 | L03/L05 のデータ境界 | D06/D07 |
