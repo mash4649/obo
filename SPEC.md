@@ -37,7 +37,7 @@ Decision order is `D07 → D08 → D09 → D10 → D11/D12 → D13`; D14 must be
 Each item below is a human gate. A value absent from the source pack remains `未決` until its own ADR is accepted.
 
 - **D07 / `ai-data-boundary`**: P1 provider/modelはOpenAI APIの`gpt-5.6-luna`、endpointは`/v1/chat/completions`（`store:false`）、regionはprovider default globalで確定した。開発・比較の無料枠は合成・匿名化fixture専用、P1参加者データはdata-sharing opt-in無効かつZDR承認後だけ送る。timeout/retry、token/cost unit、`cost_per_eligible_capture` / `cost_per_valid_soc` aggregationも確定済み。直接識別子のredaction実装テストとZDR project設定のactivation evidenceは未完了で、D06 `PRIVATE`とactive consentの前提を維持する。
-- **D08 / `delivery-proof`**: receipt basis revision, immutable ACK semantics, correction invalidation, semantic delivery key `(loop_id, basis_revision, reason_code, scheduled_evaluation_at)`, unique constraint, and stale-send revalidation.
+- **D08 / `delivery-proof`**: receipt basis revision, immutable ACK semantics, correction invalidation, semantic delivery key `(loop_id, basis_revision, reason_code, scheduled_evaluation_at)`, unique constraint, and stale-send revalidation are accepted. L06-L08 fixture evidence remains an implementation gate.
 - **D09 / `delivery-proof`**: Cron cadence, bounded batch, per-loop lock, retry ceiling/backoff, and a decision table for ACT/SILENCE/DEFER. Closed/satisfied/retired loops never create deliveries.
 - **D10 / `attention-client`**: Push qualification, token lifecycle, permission denied behavior, in-app fallback, provider failure UX, and no-raw payload contract.
 - **D11 / `privacy-ops`**: Raw/account/audit/telemetry retention, deletion timing, anonymization, backup/cache scope, crash/log redaction, and external reporting vendor. No Raw/token/PII in telemetry or crash breadcrumbs.
@@ -136,7 +136,7 @@ The following values are accepted. They do not authorize participant traffic unt
 - Cost guard: input cap 2,500 tokens, output cap 256 tokens, per-capture budget $0.002, pilot alert $5/month and hard stop $10/month. Record `cost_per_eligible_capture` and `cost_per_valid_soc`; warning/hard-stop thresholds are $0.05/$0.10.
 - Region: no regional pinning; use the provider's default global endpoint.
 
-## D08 Receipt / Delivery Working Contract (not accepted)
+## D08 Receipt / Delivery Accepted Contract (2026-09-13)
 
 - `basis_revision` is a monotonic integer on each Open Loop, starting at `1`. Increment it only when expected state, date, condition, or receipt meaning changes; retries and duplicate ACKs do not increment it.
 - An Offload Receipt is identified by `(loop_id, basis_revision)`. `ACK_OFFLOAD_RECEIPT` must include both and may succeed only for the current ACTIVE loop revision.
@@ -144,7 +144,7 @@ The following values are accepted. They do not authorize participant traffic unt
 - A correction creates a new revision and invalidates prior receipt ACKs for activation purposes without rewriting append-only history. Pending deliveries for older revisions are cancelled or suppressed by the send-time revalidation.
 - `deliveries` adds non-null `scheduled_evaluation_at` and enforces one unique semantic key: `(loop_id, basis_revision, reason_code, scheduled_evaluation_at)`.
 - Delivery creation and send revalidate `ACTIVE` loop status, current revision, absence of a newer decision, and current channel permission. A stale row is never sent and does not become a success.
-- Verification must cover duplicate ACK, stale ACK, correction invalidation, duplicate delivery insertion, and stale-send suppression with deterministic fixtures.
+- Verification must cover duplicate ACK, stale ACK, correction invalidation, duplicate delivery insertion, and stale-send suppression with deterministic fixtures before release.
 
 ## D07-R Direct-Identifier Redaction Implementation Gate
 
@@ -172,6 +172,6 @@ The Japanese name/address items are intentionally candidates only. P1 must not c
 
 - Correctness: every capability maps to an existing Beads decision or implementation issue with acceptance criteria.
 - Atomicity: decision issues remain separate from L00-L12 implementation slices; no new duplicate tracker was created.
-- Dependencies: `bd dep cycles` passes; D14 blocks L00 and D07 precedes D13 as required.
+- Dependencies: `bd dep cycles` passes; D14 blocks L00 and D07/D08 precede D13 as required.
 - Coverage: the stale `tasks/todo.md` pointers in L00-L12 were replaced with the canonical Ticket Map and relevant ADR references in Beads.
-- Verdict: D07 provider/data contract is closed; implementation remains locked only behind the recorded activation evidence and the other open decision gates.
+- Verdict: D07 provider/data contract and D08 receipt/delivery contract are closed; implementation remains locked only behind recorded evidence and the other open decision gates.

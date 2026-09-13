@@ -59,7 +59,7 @@ D01-D13の回答を決定記録にし、P0-P1外を有効化せず、L00の依�
 - Loop A review: provider/保持/数値/運用責任を推測で埋めず、D07を次の人間ゲートにする。
 - D07-A/B（2026-09-13確定）: P1 provider/modelはOpenAI APIの`gpt-5.6-luna`、endpointは`/v1/chat/completions`（`store:false`）、regionはprovider default global。P1 text-only scope、P1 fallbackなし、D07-Bのtimeout/retry/cost値を確定した。Rawからローカルで直接識別子を除去・置換したテキストだけを送る方針とR1-R3契約は維持し、ZDR project設定とredaction/adapter fixture evidenceが閉じるまで参加者通信は開始しない。
 - D07-B（2026-09-13確定）: `/v1/chat/completions` + `store:false`、text-only purpose、API data-sharing opt-inなし、ZDR承認前はsynthetic/de-identified fixtureのみ、8s/attempt・15s総期限・retry 1回（timeout/408/429/5xxのみ）、input 2,500 tokens・output 256 tokens、per-capture $0.002、月額alert $5・hard stop $10、`cost_per_eligible_capture`/`cost_per_valid_soc` warning/hard-stop $0.05/$0.10、regionはprovider default global。参加者通信はZDR project設定とredaction/adapter fixture evidence完了まで停止する。
-- D08 working contract（未承認）: `basis_revision`はLoopごとの単調増加整数（初期1）。Receipt/ACKは`(loop_id,basis_revision)`でcurrent ACTIVE revisionだけを受理し、同一revisionのACKは冪等に1件へ収束、古いrevisionはgeneric stale outcomeで無変更とする。訂正は新revisionを作り旧ACKをActivation上無効化する。`deliveries`にはUTCの`scheduled_evaluation_at`を持たせ、`(loop_id,basis_revision,reason_code,scheduled_evaluation_at)`の一意制約を置く。作成・送信直前にACTIVE/current revision/newer decision/channel permissionを再検証し、stale行は送信しない。duplicate ACK、stale ACK、訂正、duplicate delivery、stale sendのfixtureを検証する。
+- D08（2026-09-13確定）: `basis_revision`はLoopごとの単調増加整数（初期1）。Receipt/ACKは`(loop_id,basis_revision)`でcurrent ACTIVE revisionだけを受理し、同一revisionのACKは冪等に1件へ収束、古いrevisionはgeneric stale outcomeで無変更とする。訂正は新revisionを作り旧ACKをActivation上無効化する。`deliveries`にはUTCの`scheduled_evaluation_at`を持たせ、`(loop_id,basis_revision,reason_code,scheduled_evaluation_at)`の一意制約を置く。作成・送信直前にACTIVE/current revision/newer decision/channel permissionを再検証し、stale行は送信しない。duplicate ACK、stale ACK、訂正、duplicate delivery、stale sendのfixtureを実装時に検証する。
 - D07-R（redaction sub-gate, draft）: 直接識別子候補を列挙し、server-side adapter前の処理境界、fail-closed、fixture検証を定義する。日本語人名・住所の検出戦略、削除/placeholder、誤検知許容、証明閾値は人間ゲートまで未決。対象が確定するまで参加者/provider通信は開始しない。
 - Loop B（plan）: 既存Beads `obo-main-gil.7-.13` と `.28` を依存順に使い、重複タスクを作らない。
 - Loop B review: `bd dep cycles`、各BeadのAcceptance/Verification、D14→L00のブロッカーを確認する。
@@ -120,8 +120,8 @@ MVPの完成はP1の実施とExit Artifactの確定までとする。`PROCEED P2
 | U04 | 未記載 | AIは「一つの承認済みプロバイダ」だが、プロバイダ、モデル、リージョン、利用目的、送信保持条件が未定 | L03/L05 のデータ境界 | D07 |
 | U05 | 解決済み | ADR-006で4つのP1 scope、SECRET/SENSITIVE/UNCLASSIFIEDの決定的preflight、2,000文字上限、FAILED_SAFE/hold UXを固定 | L03 の allow/deny テスト | `docs/decisions/ADR-006-p1-sensitivity-preflight.md` |
 | U06 | 解決済み | ADR-005でJWT必須の単一command Function、secret専用processor/scheduler、service keyの閉域利用を固定 | L02-L05 のRLS回避権限 | `docs/decisions/ADR-005-command-boundary-and-migrations.md` |
-| U07 | 契約不足 | `deliveries` は loop revision + reason + scheduled evaluation の一意性を要求するが、その3値/semantic key の列が定義されていない | L07-L08 の重複/ stale配信防止をDBで証明できない | D08 で列と一意制約を契約へ追加/確定 |
-| U08 | 未記載 | current receipt basis/revision の保存形式、ACK の再送・訂正後の無効化規則が未定 | L06 Activation の正しさ | D08 |
+| U07 | 解決済み | `deliveries` にUTC `scheduled_evaluation_at`を持たせ、`(loop_id, basis_revision, reason_code, scheduled_evaluation_at)`を一意制約にする | L07-L08 の重複/stale配信防止をDBで証明 | D08 / ADR-008 |
+| U08 | 解決済み | `basis_revision`、current revision ACK、訂正による旧ACK無効化、stale ACK戻り値を契約 | L06 Activation の正しさ | D08 / ADR-008 |
 | U09 | 未記載 | bounded batch、Cron頻度、ロック方式、失敗/再試行、ACT/SILENCE/DEFER判定規則が未定 | L07 の通知品質/負荷 | D09 |
 | U10 | 未記載 | Expo Push は初期利用とあるが、資格情報、Push有効化時期、通知許可拒否時のin-app代替、controlled-proof tolerance が未定 | L08 | D10 |
 | U11 | 未記載 | Account削除の「release privacy policy」、保持期間、匿名化対象、ログ/クラッシュ報告ベンダーが未定 | L11 | D11 |
@@ -142,5 +142,5 @@ MVPの完成はP1の実施とExit Artifactの確定までとする。`PROCEED P2
 |---|---|---|
 | 親SoTなしで測定を実装 | 高 | U01を未解消のままL12へ進めない |
 | AI/RLS実行境界の曖昧さ | 高 | D05-D07をL02-L05の必須ブロッカーにする |
-| 冪等性キーの物理欠落 | 高 | D08でスキーマ制約まで決めてからL07-L08を実装 |
+| 冪等性キーの物理欠落 | 中 | D08/ADR-008の一意制約をL07-L08のmigration/testで証明 |
 | P2以降の先走り | 中 | Gate-locked backlogを実装キューに入れない |
