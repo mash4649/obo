@@ -20,12 +20,25 @@ P1は低リスクのテキスト入力だけを扱い、D06の`PRIVATE`判定と
 
 次の項目はこのADRでは決めず、D07-Bの未決事項として残す。
 
-- 直接識別子の対象一覧（個人名、メールアドレス、電話番号など）
 - 除去か置換か、置換時のプレースホルダー形式
-- 検出不能・曖昧・処理失敗時のfail-closed挙動
+- 検出不能・曖昧・処理失敗時の具体的なhold/re-entry UX
 - 置換後テキストの品質評価とテスト閾値
 
 上記が確定するまで、参加者の実データを外部providerへ送信しない。
+
+## Direct-Identifier Taxonomy (P1 R1 decision)
+
+| Category | P1 detection status | External-AI rule |
+|---|---|---|
+| Email address | Supported by deterministic syntax | Replace locally, then continue only if the post-redaction contract passes |
+| Phone number | Supported for the explicitly accepted domestic/international syntax set | Replace locally, then continue only if the post-redaction contract passes |
+| URL credentials/query tokens and known identifier-bearing URL parts | Supported only for the explicitly accepted syntax set | Replace the identifier-bearing part; otherwise deny |
+| Account/user/device IDs | Supported only for UUID or an explicitly accepted app-ID grammar | Replace locally; opaque or unknown formats are denied |
+| Personal names | Not guaranteed in P1 free-form text | Unsupported category; external-AI route is denied unless already removed by an approved local transform |
+| Free-form postal addresses | Not guaranteed in P1 free-form text | Unsupported category; external-AI route is denied unless already removed by an approved local transform |
+| Other quasi-identifiers (for example exact dates, workplace, or unique facts) | Not part of R1 taxonomy | Governed by D06/D11; never silently treated as safe by this ADR |
+
+The supported syntax sets and the remove-versus-placeholder operation remain R2 implementation decisions. The important R1 invariant is that an unsupported or unknown category is not an implicit allow.
 
 ## Alternatives Considered
 

@@ -131,7 +131,8 @@ The following is a planning draft for the accepted high-level boundary; it is no
 - The redaction boundary is server-side and must run before the provider adapter. The adapter must never receive the original Raw text as a fallback.
 - A detector miss, ambiguous match, unsupported category, or redaction error must fail closed: no external-AI request; keep the capture local/held and show a generic re-entry path.
 - D06 SECRET/SENSITIVE/UNCLASSIFIED rejection remains authoritative and is not replaced by this redaction step.
-- Still `未決`: exact category grammar, Japanese name/address detection strategy, remove-versus-placeholder behavior, placeholder format, false-positive tolerance, and the fixture threshold for proving that adapter input contains no direct identifier.
+- R1 taxonomy: deterministic syntax may support email, phone, identifier-bearing URL parts, and UUID/approved app-ID formats. Personal names, free-form postal addresses, opaque IDs, and unknown syntax are unsupported in P1 and must not become implicit allow.
+- Still `未決`: exact category grammar, remove-versus-placeholder behavior, placeholder format, false-positive tolerance, and the fixture threshold for proving that adapter input contains no direct identifier. Japanese name/address detection is explicitly not guaranteed in P1; R2 must preserve deny-by-default for those categories.
 
 The Japanese name/address items are intentionally candidates only. P1 must not claim that free-form names or addresses are removed until a deterministic or explicitly bounded strategy and its fail-closed tests are accepted.
 
