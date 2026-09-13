@@ -146,6 +146,16 @@ The following values are accepted. They do not authorize participant traffic unt
 - Delivery creation and send revalidate `ACTIVE` loop status, current revision, absence of a newer decision, and current channel permission. A stale row is never sent and does not become a success.
 - Verification must cover duplicate ACK, stale ACK, correction invalidation, duplicate delivery insertion, and stale-send suppression with deterministic fixtures before release.
 
+## D09 Scheduler / Decision Working Contract (not accepted)
+
+- Runtime: Supabase Cron every 5 minutes; select at most 25 due ACTIVE loops per run, ordered by `next_evaluation_at` then `loop_id`.
+- Lock/retry: obtain one per-loop transaction lock; skip when unavailable. Evaluate at most twice per loop per run (initial + one retry with 1-5 seconds jitter). On exhaustion, record `DEFER`, set the next evaluation 15 minutes later, and create no delivery.
+- `ACT`: only when the loop is ACTIVE, current revision is revalidated, effective state is `UNSATISFIED`, and no equivalent pending delivery exists. Only `ACT` may create a delivery.
+- `SILENCE`: when the loop is not ACTIVE, or effective state is `SATISFIED` or `NO_LONGER_REQUIRED`. Record the decision and create no delivery; terminal loops receive no future evaluation.
+- `DEFER`: when effective state is `UNKNOWN` or `CONFLICT`, a transient provider/evaluation failure occurs, or safe delivery eligibility cannot be established. Record the decision, move `next_evaluation_at` forward, and create no delivery.
+- Every `ACT` reuses D08 semantic idempotency and revalidates loop status, current revision, newer decisions, and channel permission immediately before send. Closed, satisfied, retired, or stale loops never send.
+- Verification must cover bounded batch, lock contention, retry exhaustion, each decision-table row, stale loop, and `SILENCE`/`DEFER` zero-delivery behavior.
+
 ## D07-R Direct-Identifier Redaction Implementation Gate
 
 The following is a planning draft for the accepted high-level boundary; it is not yet an implementation contract.
