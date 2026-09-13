@@ -123,6 +123,18 @@ The current critical gate is the remaining D07 endpoint/data contract. D07-A pro
 - P1 fallback: none. A quality or policy failure reopens D07 rather than silently adding a second provider/model.
 - ADR-007 remains unaccepted until the D07-B data contract and activation evidence are closed.
 
+## D07-B Working Proposal (not accepted)
+
+The following values are a bounded implementation proposal only. They do not authorize participant traffic until the human gate is accepted.
+
+- Endpoint: recommend `/v1/chat/completions` with `store: false`; do not use conversations, files, web search, or other tools in P1.
+- Purpose: text-only expected-state/date extraction, one clarification question, and next-evaluation proposal. The model never marks completion or performs external actions.
+- Training/data use: keep OpenAI API default no-training behavior and do not opt in to data sharing. Verify project settings before activation.
+- Retention: require OpenAI ZDR approval before participant traffic. Without approval, only synthetic/de-identified fixture traffic is allowed. Default abuse-monitoring retention (up to 30 days) remains an explicit risk to accept or reject at the gate.
+- Timeout/retry: recommend 8 seconds per attempt, 15 seconds total deadline, one retry only for timeout/408/429/5xx with 250-1000 ms jitter; no provider fallback.
+- Cost guard: recommend input cap 2,500 tokens, output cap 256 tokens, per-capture budget $0.002, pilot alert $5/month and hard stop $10/month. Record `cost_per_eligible_capture` and `cost_per_valid_soc`; provisional warning/hard-stop thresholds are $0.05/$0.10 and require confirmation.
+- Still unresolved: region, human-review/safety-retention acceptance, exact endpoint choice, and all numeric thresholds above.
+
 ## D07-R Direct-Identifier Redaction Draft (not accepted)
 
 The following is a planning draft for the accepted high-level boundary; it is not yet an implementation contract.
