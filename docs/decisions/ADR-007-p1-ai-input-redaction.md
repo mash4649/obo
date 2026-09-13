@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed（直接識別子を外部AIへ送らない方針は合意済み。provider/modelを含むD07全体は未完了）
+Proposed（provider/modelは選択済み。直接識別子境界とD07-Bデータ契約の最終受入前）
 
 ## Date
 
@@ -13,6 +13,12 @@ Proposed（直接識別子を外部AIへ送らない方針は合意済み。prov
 P1は低リスクのテキスト入力だけを扱い、D06の`PRIVATE`判定とactive consentの後に外部AIを利用する。既存の契約はPush、ログ、analytics、crash breadcrumbsへのRaw/PII混入を禁止しているが、外部AIのpromptに個人名などの直接識別子を含めない境界は明示されていなかった。
 
 参加者データを扱うP1では、providerのtraining opt-outやZDRだけに依存せず、送信前にアプリ側で直接識別子を処理する必要がある。
+
+D07-AのP1 provider/modelは、OpenAI APIの`gpt-5.6-luna`を使用する。公式モデル仕様では、テキスト入出力、`/v1/chat/completions`、`/v1/responses`、および入力単価$0.20/1M tokens・出力単価$1.20/1M tokensが示されている。P1で採用するendpoint、region、purpose、timeout/retry、保持および運用上の上限はD07-Bで別途確定する。
+
+OpenAIのデータ制御仕様では、APIデータは明示的なopt-inがない限り学習・改善に使われず、Chat Completions/Responsesは通常最大30日のabuse-monitoring retentionがあり、ZDRは事前承認が必要とされる。したがって、training opt-outの運用確認、ZDR承認、保持条件の受入は参加者通信のactivation evidenceとしてD07-Bに残す。
+
+参照: [GPT-5.6 Luna model specification](https://developers.openai.com/api/docs/models/gpt-5.6-luna)、[OpenAI API data controls](https://developers.openai.com/api/docs/guides/your-data)
 
 ## Decision
 

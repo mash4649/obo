@@ -57,7 +57,7 @@ D01-D13の回答を決定記録にし、P0-P1外を有効化せず、L00の依�
 
 - Loop A（spec）: `SPEC.md` に固定済みADR、残りD07-D14の能力境界、コマンド、構造、テスト、禁止境界を記録する。
 - Loop A review: provider/保持/数値/運用責任を推測で埋めず、D07を次の人間ゲートにする。
-- D07-A（provider/model/endpoint）は2026-09-13に再オープン。候補はMistral/Gemini/OpenAI/Groq。無料比較は合成fixture専用、P1 fallbackなし。P1 text-only scopeは確定。外部AIにはRawからローカルで直接識別子を除去・置換したテキストだけを送る方針を確定した。対象項目・置換方式・失敗時の拒否は未決。D07-B（retention/human-review/timeout-retry/cost）も未決のまま残す。
+- D07-A（provider/model/endpoint）は2026-09-13に更新。P1 provider/modelはOpenAI APIの`gpt-5.6-luna`に選定し、P1 text-only scopeとP1 fallbackなしを維持する。公式仕様上の候補endpointは`/v1/chat/completions`と`/v1/responses`だが、採用endpoint、region、purpose、retention/human-review、timeout/retry、token/cost単位、`cost_per_eligible_capture` / `cost_per_valid_soc`はD07-Bの未決事項として残す。外部AIにはRawからローカルで直接識別子を除去・置換したテキストだけを送る方針とR1-R3契約は維持し、D07-Bとactivation evidenceが閉じるまで参加者通信は開始しない。
 - D07-R（redaction sub-gate, draft）: 直接識別子候補を列挙し、server-side adapter前の処理境界、fail-closed、fixture検証を定義する。日本語人名・住所の検出戦略、削除/placeholder、誤検知許容、証明閾値は人間ゲートまで未決。対象が確定するまで参加者/provider通信は開始しない。
 - Loop B（plan）: 既存Beads `obo-main-gil.7-.13` と `.28` を依存順に使い、重複タスクを作らない。
 - Loop B review: `bd dep cycles`、各BeadのAcceptance/Verification、D14→L00のブロッカーを確認する。
