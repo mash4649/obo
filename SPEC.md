@@ -91,7 +91,7 @@ Use strict TypeScript, named domain states, UTC timestamps, append-only semantic
 - Security: own-account allow, cross-account deny, client Raw deny, direct outcome-write deny, JWT/secret boundary checks.
 - AI: SECRET/SENSITIVE/UNCLASSIFIED adapter-call count is zero; only explicitly allowed PRIVATE fixture reaches the adapter.
 - Delivery: revision mismatch, duplicate semantic key, stale loop, retry ceiling and no-raw payload tests.
-- Privacy: deletion blocks processing, redaction fixtures contain no Raw/token/PII, provider adapter spies never observe direct identifiers, deny/error fixtures produce zero adapter calls, and consent withdrawal stops all work.
+- Privacy: deletion blocks processing, all redaction fixtures are synthetic, provider adapter spies never observe direct identifiers, deny/ambiguous/error/D06-deny fixtures produce zero adapter calls, retries reuse only the approved redacted payload, and consent withdrawal stops all work.
 - Release: CI command set passes from clean checkout; real-device/TestFlight evidence is separate and follows ADR-002.
 
 ## Boundaries

@@ -56,6 +56,21 @@ The server pipeline is ordered as `D06 preflight + active consent → R2 redacti
 
 Audit/telemetry may record policy version and reason code, but never Raw text, the original prompt, redacted text, or provider response content. P1 has no second-provider fallback for a redaction or policy failure.
 
+## Fixture and Verification Contract (P1 R3 decision)
+
+All fixtures are synthetic; use `.invalid` domains, reserved/fake phone values, and non-user UUIDs. No participant or production value is allowed in the fixture set.
+
+| Fixture | Redaction result | Adapter calls | Observable requirement |
+|---|---|---:|---|
+| plain low-risk text with no candidate identifier | `ALLOW` | 1 | Adapter receives only `ApprovedAdapterInput` |
+| synthetic email/phone/approved-ID text | `ALLOW` | 1 | Adapter input contains no original identifier literal |
+| personal-name/free-form-address/opaque-ID fixture | `DENY` | 0 | Capture is local/held; user sees generic re-entry |
+| ambiguous or unsupported URL/ID syntax | `DENY` | 0 | No provider request or Raw fallback |
+| redaction exception/unknown result | `DENY` | 0 | Exception is converted to generic failure; no prompt is emitted |
+| any fixture with D06 deny or inactive consent | `DENY` | 0 | R2 cannot override D06 or consent |
+
+The verification harness must spy on the adapter and assert the call count and received shape. Provider retry tests must assert that every retry reuses the same redacted payload and never receives Raw.
+
 ## Alternatives Considered
 
 ### Providerのtraining opt-out/ZDRだけに依存する
