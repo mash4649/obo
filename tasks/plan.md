@@ -69,7 +69,7 @@ D01-D13の回答を決定記録にし、P0-P1外を有効化せず、L00の依�
    - Verify: 仕様レビューで未対応カテゴリが暗黙のallowになっていないことを確認する。
    - Dependencies: なし。Files: `SPEC.md`, `docs/decisions/ADR-007-p1-ai-input-redaction.md`。
 2. **`obo-main-gil.7.2` redaction adapter boundary**
-   - Acceptance: server-sideのprovider adapter直前に一度だけredactionを適用し、Raw fallbackを持たない。未対応・曖昧・失敗は外部AIリクエスト0回になる。
+   - Acceptance: server-sideのprovider adapter直前に一度だけredactionを適用し、`ApprovedAdapterInput`以外をadapterへ渡さない。Raw fallbackを持たず、未対応・曖昧・失敗は外部AIリクエスト0回になる。retryは同じredacted valueを再利用する。
    - Verify: adapter spyで、許可fixtureはredacted textだけを受け、拒否fixtureは到達回数0であることを確認する。
    - Dependencies: 1。Files: L03/L05のAI adapter境界とその単体テスト。
 3. **`obo-main-gil.7.3` fixture/verification contract**

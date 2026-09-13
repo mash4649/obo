@@ -40,6 +40,22 @@ P1は低リスクのテキスト入力だけを扱い、D06の`PRIVATE`判定と
 
 The supported syntax sets and the remove-versus-placeholder operation remain R2 implementation decisions. The important R1 invariant is that an unsupported or unknown category is not an implicit allow.
 
+## Redaction-to-Adapter Boundary (P1 R2 decision)
+
+The provider adapter accepts only a redacted value; it has no parameter or fallback path for Raw.
+
+```ts
+type ExternalAiInput =
+  | { status: 'ALLOW'; redactedText: string; policyVersion: string }
+  | { status: 'DENY'; reasonCode: string };
+
+type ApprovedAdapterInput = Extract<ExternalAiInput, { status: 'ALLOW' }>;
+```
+
+The server pipeline is ordered as `D06 preflight + active consent → R2 redaction once → adapter`. Provider retries reuse the same `ApprovedAdapterInput`; they never reintroduce Raw. `DENY`, an unknown result, or a redaction exception produces zero adapter calls, keeps the capture local/held, and returns only a generic re-entry outcome to the user.
+
+Audit/telemetry may record policy version and reason code, but never Raw text, the original prompt, redacted text, or provider response content. P1 has no second-provider fallback for a redaction or policy failure.
+
 ## Alternatives Considered
 
 ### Providerのtraining opt-out/ZDRだけに依存する

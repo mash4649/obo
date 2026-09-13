@@ -129,6 +129,7 @@ The following is a planning draft for the accepted high-level boundary; it is no
 
 - Candidate direct-identifier categories: personal names, email addresses, phone numbers, postal addresses, account/user/device identifiers, and URLs, file paths, or filenames containing identifiers.
 - The redaction boundary is server-side and must run before the provider adapter. The adapter must never receive the original Raw text as a fallback.
+- The adapter contract accepts only an `ApprovedAdapterInput` containing `redactedText` and `policyVersion`; Raw is not a field and cannot be passed as a fallback. Retries reuse the same approved redacted value.
 - A detector miss, ambiguous match, unsupported category, or redaction error must fail closed: no external-AI request; keep the capture local/held and show a generic re-entry path.
 - D06 SECRET/SENSITIVE/UNCLASSIFIED rejection remains authoritative and is not replaced by this redaction step.
 - R1 taxonomy: deterministic syntax may support email, phone, identifier-bearing URL parts, and UUID/approved app-ID formats. Personal names, free-form postal addresses, opaque IDs, and unknown syntax are unsupported in P1 and must not become implicit allow.
