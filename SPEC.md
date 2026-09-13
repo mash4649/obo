@@ -36,7 +36,7 @@ Decision order is `D07 → D08 → D09 → D10 → D11/D12 → D13`; D14 must be
 
 Each item below is a human gate. A value absent from the source pack remains `未決` until its own ADR is accepted.
 
-- **D07 / `ai-data-boundary`**: D07-AのP1 provider/modelはOpenAI APIの`gpt-5.6-luna`に変更して固定する。開発・比較の無料枠は合成・匿名化fixture専用、P1参加者データは有料プランとtraining opt-out、ZDRまたは同等の保持制御を確認したうえで送る。外部AIへは、Rawからローカルで直接識別子を置換・除去したテキストだけを送信することを確定する。endpoint、region、purpose、no-training/no-human-review terms、timeout/retry、token/cost unit、`cost_per_eligible_capture` / `cost_per_valid_soc` aggregationは未決として残す。D06 `PRIVATE`とactive consentの前提は維持する。
+- **D07 / `ai-data-boundary`**: P1 provider/modelはOpenAI APIの`gpt-5.6-luna`、endpointは`/v1/chat/completions`（`store:false`）、regionはprovider default globalで確定した。開発・比較の無料枠は合成・匿名化fixture専用、P1参加者データはdata-sharing opt-in無効かつZDR承認後だけ送る。timeout/retry、token/cost unit、`cost_per_eligible_capture` / `cost_per_valid_soc` aggregationも確定済み。直接識別子のredaction実装テストとZDR project設定のactivation evidenceは未完了で、D06 `PRIVATE`とactive consentの前提を維持する。
 - **D08 / `delivery-proof`**: receipt basis revision, immutable ACK semantics, correction invalidation, semantic delivery key `(loop_id, basis_revision, reason_code, scheduled_evaluation_at)`, unique constraint, and stale-send revalidation.
 - **D09 / `delivery-proof`**: Cron cadence, bounded batch, per-loop lock, retry ceiling/backoff, and a decision table for ACT/SILENCE/DEFER. Closed/satisfied/retired loops never create deliveries.
 - **D10 / `attention-client`**: Push qualification, token lifecycle, permission denied behavior, in-app fallback, provider failure UX, and no-raw payload contract.
@@ -109,33 +109,34 @@ Use strict TypeScript, named domain states, UTC timestamps, append-only semantic
 
 ## Open Questions
 
-The current critical gate is the remaining D07 endpoint/data contract. D07-A provider/model is now selected as OpenAI API `gpt-5.6-luna`; endpoint, region, purpose, retention, human-review terms, timeout/retry, cost ceiling, and activation evidence remain unresolved. Do not activate participant traffic until those values and the concrete redaction implementation contract are accepted.
+The current critical gate is D07 activation evidence and the concrete redaction implementation contract. D07-A/B provider, model, endpoint, purpose, retention, timeout/retry, and cost values are accepted; participant traffic remains disabled until ZDR approval and the adapter/fixture evidence are present.
 
-## D07-A Working Shortlist (reopened 2026-09-13)
+## D07-A Selected Provider (2026-09-13)
 
 - P1 provider: OpenAI API.
-- P1 model: `gpt-5.6-luna` (selected for production implementation and participant-data path). Official catalog lists Chat Completions and Responses; the P1 endpoint remains `未決` until D07-B.
+- P1 model: `gpt-5.6-luna` (selected for production implementation and participant-data path).
+- P1 endpoint: `/v1/chat/completions` with `store:false`; no conversations, files, web search, or other tools in P1.
 - P1 input modality: text only; PDF/image/vision is outside the P1 Core Proof.
 - Development/comparison: free tiers may be used only with synthetic or de-identified fixtures; participant Raw/PII is never sent through a free tier.
-- P1 participant traffic: paid tier only, with provider-specific training opt-out and ZDR/equivalent retention control verified before activation.
-- External-AI input boundary: direct identifiers are locally removed or replaced before any request. The identifier list, replacement format, and fail-closed behavior remain `未決`; until those are accepted, no participant/provider traffic starts.
+- P1 participant traffic: paid tier only, OpenAI API data-sharing opt-in disabled, and OpenAI ZDR approval verified before activation. Until then, only synthetic/de-identified fixtures are allowed.
+- External-AI input boundary: direct identifiers are locally removed or replaced before any request. The redaction implementation details remain an implementation gate; until its tests pass, no participant/provider traffic starts.
 - Evaluation: record provider, exact model ID, endpoint, latency, output validity, interpretation quality, and token cost per fixture run.
 - P1 fallback: none. A quality or policy failure reopens D07 rather than silently adding a second provider/model.
-- ADR-007 remains unaccepted until the D07-B data contract and activation evidence are closed.
+- ADR-007 accepts the D07-A/B data contract; its activation evidence remains a release blocker.
 
-## D07-B Working Proposal (not accepted)
+## D07-B Accepted Contract (2026-09-13)
 
-The following values are a bounded implementation proposal only. They do not authorize participant traffic until the human gate is accepted.
+The following values are accepted. They do not authorize participant traffic until the activation evidence is complete.
 
-- Endpoint: recommend `/v1/chat/completions` with `store: false`; do not use conversations, files, web search, or other tools in P1.
+- Endpoint: `/v1/chat/completions` with `store: false`; do not use conversations, files, web search, or other tools in P1.
 - Purpose: text-only expected-state/date extraction, one clarification question, and next-evaluation proposal. The model never marks completion or performs external actions.
-- Training/data use: keep OpenAI API default no-training behavior and do not opt in to data sharing. Verify project settings before activation.
-- Retention: require OpenAI ZDR approval before participant traffic. Without approval, only synthetic/de-identified fixture traffic is allowed. Default abuse-monitoring retention (up to 30 days) remains an explicit risk to accept or reject at the gate.
-- Timeout/retry: recommend 8 seconds per attempt, 15 seconds total deadline, one retry only for timeout/408/429/5xx with 250-1000 ms jitter; no provider fallback.
-- Cost guard: recommend input cap 2,500 tokens, output cap 256 tokens, per-capture budget $0.002, pilot alert $5/month and hard stop $10/month. Record `cost_per_eligible_capture` and `cost_per_valid_soc`; provisional warning/hard-stop thresholds are $0.05/$0.10 and require confirmation.
-- Still unresolved: region, human-review/safety-retention acceptance, exact endpoint choice, and all numeric thresholds above.
+- Training/data use: OpenAI API data-sharing opt-in remains disabled.
+- Retention: OpenAI ZDR approval is required before participant traffic. Without approval, only synthetic/de-identified fixture traffic is allowed. Default abuse-monitoring retention is accepted as a pre-activation risk condition and must be covered by the approved ZDR project settings.
+- Timeout/retry: 8 seconds per attempt, 15 seconds total deadline, one retry only for timeout/408/429/5xx with 250-1000 ms jitter; no provider fallback.
+- Cost guard: input cap 2,500 tokens, output cap 256 tokens, per-capture budget $0.002, pilot alert $5/month and hard stop $10/month. Record `cost_per_eligible_capture` and `cost_per_valid_soc`; warning/hard-stop thresholds are $0.05/$0.10.
+- Region: no regional pinning; use the provider's default global endpoint.
 
-## D07-R Direct-Identifier Redaction Draft (not accepted)
+## D07-R Direct-Identifier Redaction Implementation Gate
 
 The following is a planning draft for the accepted high-level boundary; it is not yet an implementation contract.
 
@@ -154,8 +155,8 @@ The Japanese name/address items are intentionally candidates only. P1 must not c
 - Correctness: the objective and success criteria map to the existing P0-P1 Epic and ADR-001〜006; no product meaning is redefined.
 - Completeness: objective, commands, project structure, code style, testing strategy, boundaries, capability map, and remaining decision contracts are present.
 - Boundaries: P2+, external provider choices, live participant data, and remote state are explicitly excluded until their gates pass.
-- Critical gap: D07-A provider/model is selected as OpenAI API `gpt-5.6-luna`, while endpoint and D07-B retention/human-review/timeout-retry/cost values remain intentionally unresolved and require the next human gate. P1 text-only scope is fixed; ADR-007 remains unaccepted.
-- Redaction review: the high-level no-direct-identifier boundary is accepted, but Japanese name/address detection and the exact fail-closed contract remain critical D07 blockers. No participant/provider traffic is allowed until these are accepted.
+- Critical gap: D07-A/B provider, model, endpoint, retention, timeout/retry, and cost values are accepted. ZDR project configuration and redaction/adapter fixture evidence remain release blockers; P1 text-only scope is fixed.
+- Redaction review: the high-level no-direct-identifier boundary is accepted, while Japanese name/address detection remains deny-by-default and the exact adapter fixture evidence is still required. No participant/provider traffic is allowed until these are verified.
 
 ## Loop B Review (2026-09-12)
 
@@ -163,4 +164,4 @@ The Japanese name/address items are intentionally candidates only. P1 must not c
 - Atomicity: decision issues remain separate from L00-L12 implementation slices; no new duplicate tracker was created.
 - Dependencies: `bd dep cycles` passes; D14 blocks L00 and D07 precedes D13 as required.
 - Coverage: the stale `tasks/todo.md` pointers in L00-L12 were replaced with the canonical Ticket Map and relevant ADR references in Beads.
-- Verdict: plan is ready for the reopened human D07-A provider comparison; implementation remains locked.
+- Verdict: D07 provider/data contract is closed; implementation remains locked only behind the recorded activation evidence and the other open decision gates.

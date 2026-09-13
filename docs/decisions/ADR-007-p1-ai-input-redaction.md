@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed（provider/modelは選択済み。直接識別子境界とD07-Bデータ契約の最終受入前）
+Accepted for provider/data contract; activation evidence and redaction implementation tests remain required before participant traffic.
 
 ## Date
 
@@ -14,9 +14,9 @@ P1は低リスクのテキスト入力だけを扱い、D06の`PRIVATE`判定と
 
 参加者データを扱うP1では、providerのtraining opt-outやZDRだけに依存せず、送信前にアプリ側で直接識別子を処理する必要がある。
 
-D07-AのP1 provider/modelは、OpenAI APIの`gpt-5.6-luna`を使用する。公式モデル仕様では、テキスト入出力、`/v1/chat/completions`、`/v1/responses`、および入力単価$0.20/1M tokens・出力単価$1.20/1M tokensが示されている。P1で採用するendpoint、region、purpose、timeout/retry、保持および運用上の上限はD07-Bで別途確定する。
+D07-A/BのP1 provider/modelはOpenAI APIの`gpt-5.6-luna`、endpointは`/v1/chat/completions`（`store:false`）、regionはprovider default globalとする。purposeはtext-onlyのexpected-state/date extraction、1件のclarification question、next-evaluation proposalに限定し、completion確定や外部アクションは許可しない。timeoutは1試行8秒・総期限15秒、retryはtimeout/408/429/5xxに対する1回のみ（250-1000ms jitter）、provider fallbackなし。input 2,500 tokens、output 256 tokens、per-capture $0.002、月額alert $5、hard stop $10、`cost_per_eligible_capture`/`cost_per_valid_soc`のwarning/hard-stopは$0.05/$0.10とする。
 
-OpenAIのデータ制御仕様では、APIデータは明示的なopt-inがない限り学習・改善に使われず、Chat Completions/Responsesは通常最大30日のabuse-monitoring retentionがあり、ZDRは事前承認が必要とされる。したがって、training opt-outの運用確認、ZDR承認、保持条件の受入は参加者通信のactivation evidenceとしてD07-Bに残す。
+OpenAIのデータ制御仕様では、APIデータは明示的なopt-inがない限り学習・改善に使われず、Chat Completions/Responsesは通常最大30日のabuse-monitoring retentionがあり、ZDRは事前承認が必要とされる。したがって、data-sharing opt-in無効化、ZDR承認、保持条件のプロジェクト設定確認は参加者通信のactivation evidenceとする。ZDR承認前は合成・匿名化fixtureのみ許可する。
 
 参照: [GPT-5.6 Luna model specification](https://developers.openai.com/api/docs/models/gpt-5.6-luna)、[OpenAI API data controls](https://developers.openai.com/api/docs/guides/your-data)
 
@@ -24,7 +24,7 @@ OpenAIのデータ制御仕様では、APIデータは明示的なopt-inがな�
 
 外部AIへはRawをそのまま送信しない。Rawからローカルで直接識別子を除去または置換したテキストだけを、D06の`PRIVATE`判定・active consent・D07 provider approvalの後に送信する。
 
-次の項目はこのADRでは決めず、D07-Bの未決事項として残す。
+次の項目は実装・activation evidenceとして残す。
 
 - 除去か置換か、置換時のプレースホルダー形式
 - 検出不能・曖昧・処理失敗時の具体的なhold/re-entry UX
