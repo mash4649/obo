@@ -38,7 +38,7 @@ Each item below is a human gate. A value absent from the source pack remains `�
 
 - **D07 / `ai-data-boundary`**: P1 provider/modelはOpenAI APIの`gpt-5.6-luna`、endpointは`/v1/chat/completions`（`store:false`）、regionはprovider default globalで確定した。開発・比較の無料枠は合成・匿名化fixture専用、P1参加者データはdata-sharing opt-in無効かつZDR承認後だけ送る。timeout/retry、token/cost unit、`cost_per_eligible_capture` / `cost_per_valid_soc` aggregationも確定済み。直接識別子のredaction実装テストとZDR project設定のactivation evidenceは未完了で、D06 `PRIVATE`とactive consentの前提を維持する。
 - **D08 / `delivery-proof`**: receipt basis revision, immutable ACK semantics, correction invalidation, semantic delivery key `(loop_id, basis_revision, reason_code, scheduled_evaluation_at)`, unique constraint, and stale-send revalidation are accepted. L06-L08 fixture evidence remains an implementation gate.
-- **D09 / `delivery-proof`**: Cron cadence, bounded batch, per-loop lock, retry ceiling/backoff, and a decision table for ACT/SILENCE/DEFER. Closed/satisfied/retired loops never create deliveries.
+- **D09 / `delivery-proof`**: Cron cadence, bounded batch, per-loop lock, retry ceiling/backoff, and the ACT/SILENCE/DEFER decision table are accepted. Closed/satisfied/retired loops never create deliveries; scheduler integration evidence remains an implementation gate.
 - **D10 / `attention-client`**: Push qualification, token lifecycle, permission denied behavior, in-app fallback, provider failure UX, and no-raw payload contract.
 - **D11 / `privacy-ops`**: Raw/account/audit/telemetry retention, deletion timing, anonymization, backup/cache scope, crash/log redaction, and external reporting vendor. No Raw/token/PII in telemetry or crash breadcrumbs.
 - **D12 / `pilot-governance`**: recruitment and consent wording, five-person cohort handling, withdrawal/incident runbook, critical incident definition, pause/stop authority, and participant support channel.
@@ -146,7 +146,7 @@ The following values are accepted. They do not authorize participant traffic unt
 - Delivery creation and send revalidate `ACTIVE` loop status, current revision, absence of a newer decision, and current channel permission. A stale row is never sent and does not become a success.
 - Verification must cover duplicate ACK, stale ACK, correction invalidation, duplicate delivery insertion, and stale-send suppression with deterministic fixtures before release.
 
-## D09 Scheduler / Decision Working Contract (not accepted)
+## D09 Scheduler / Decision Accepted Contract (2026-09-13)
 
 - Runtime: Supabase Cron every 5 minutes; select at most 25 due ACTIVE loops per run, ordered by `next_evaluation_at` then `loop_id`.
 - Lock/retry: obtain one per-loop transaction lock; skip when unavailable. Evaluate at most twice per loop per run (initial + one retry with 1-5 seconds jitter). On exhaustion, record `DEFER`, set the next evaluation 15 minutes later, and create no delivery.
@@ -154,7 +154,7 @@ The following values are accepted. They do not authorize participant traffic unt
 - `SILENCE`: when the loop is not ACTIVE, or effective state is `SATISFIED` or `NO_LONGER_REQUIRED`. Record the decision and create no delivery; terminal loops receive no future evaluation.
 - `DEFER`: when effective state is `UNKNOWN` or `CONFLICT`, a transient provider/evaluation failure occurs, or safe delivery eligibility cannot be established. Record the decision, move `next_evaluation_at` forward, and create no delivery.
 - Every `ACT` reuses D08 semantic idempotency and revalidates loop status, current revision, newer decisions, and channel permission immediately before send. Closed, satisfied, retired, or stale loops never send.
-- Verification must cover bounded batch, lock contention, retry exhaustion, each decision-table row, stale loop, and `SILENCE`/`DEFER` zero-delivery behavior.
+- Verification must cover bounded batch, lock contention, retry exhaustion, each decision-table row, stale loop, and `SILENCE`/`DEFER` zero-delivery behavior before release.
 
 ## D07-R Direct-Identifier Redaction Implementation Gate
 
@@ -184,4 +184,4 @@ The Japanese name/address items are intentionally candidates only. P1 must not c
 - Atomicity: decision issues remain separate from L00-L12 implementation slices; no new duplicate tracker was created.
 - Dependencies: `bd dep cycles` passes; D14 blocks L00 and D07/D08 precede D13 as required.
 - Coverage: the stale `tasks/todo.md` pointers in L00-L12 were replaced with the canonical Ticket Map and relevant ADR references in Beads.
-- Verdict: D07 provider/data contract and D08 receipt/delivery contract are closed; implementation remains locked only behind recorded evidence and the other open decision gates.
+- Verdict: D07 provider/data, D08 receipt/delivery, and D09 scheduler contracts are closed; implementation remains locked only behind recorded evidence and the other open decision gates.
