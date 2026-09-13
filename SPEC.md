@@ -136,6 +136,16 @@ The following values are accepted. They do not authorize participant traffic unt
 - Cost guard: input cap 2,500 tokens, output cap 256 tokens, per-capture budget $0.002, pilot alert $5/month and hard stop $10/month. Record `cost_per_eligible_capture` and `cost_per_valid_soc`; warning/hard-stop thresholds are $0.05/$0.10.
 - Region: no regional pinning; use the provider's default global endpoint.
 
+## D08 Receipt / Delivery Working Contract (not accepted)
+
+- `basis_revision` is a monotonic integer on each Open Loop, starting at `1`. Increment it only when expected state, date, condition, or receipt meaning changes; retries and duplicate ACKs do not increment it.
+- An Offload Receipt is identified by `(loop_id, basis_revision)`. `ACK_OFFLOAD_RECEIPT` must include both and may succeed only for the current ACTIVE loop revision.
+- ACK is durable and idempotent: at most one valid `OFFLOAD_RECEIPT_ACKED` event exists per `(loop_id, basis_revision)`. A stale revision returns a generic stale outcome, writes no activation event, and requires rendering the current receipt again.
+- A correction creates a new revision and invalidates prior receipt ACKs for activation purposes without rewriting append-only history. Pending deliveries for older revisions are cancelled or suppressed by the send-time revalidation.
+- `deliveries` adds non-null `scheduled_evaluation_at` and enforces one unique semantic key: `(loop_id, basis_revision, reason_code, scheduled_evaluation_at)`.
+- Delivery creation and send revalidate `ACTIVE` loop status, current revision, absence of a newer decision, and current channel permission. A stale row is never sent and does not become a success.
+- Verification must cover duplicate ACK, stale ACK, correction invalidation, duplicate delivery insertion, and stale-send suppression with deterministic fixtures.
+
 ## D07-R Direct-Identifier Redaction Implementation Gate
 
 The following is a planning draft for the accepted high-level boundary; it is not yet an implementation contract.
