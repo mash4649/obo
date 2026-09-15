@@ -61,6 +61,7 @@ D01-D13の回答を決定記録にし、P0-P1外を有効化せず、L00の依�
 - D07-B（2026-09-13確定）: `/v1/chat/completions` + `store:false`、text-only purpose、API data-sharing opt-inなし、ZDR承認前はsynthetic/de-identified fixtureのみ、8s/attempt・15s総期限・retry 1回（timeout/408/429/5xxのみ）、input 2,500 tokens・output 256 tokens、per-capture $0.002、月額alert $5・hard stop $10、`cost_per_eligible_capture`/`cost_per_valid_soc` warning/hard-stop $0.05/$0.10、regionはprovider default global。参加者通信はZDR project設定とredaction/adapter fixture evidence完了まで停止する。
 - D08（2026-09-13確定）: `basis_revision`はLoopごとの単調増加整数（初期1）。Receipt/ACKは`(loop_id,basis_revision)`でcurrent ACTIVE revisionだけを受理し、同一revisionのACKは冪等に1件へ収束、古いrevisionはgeneric stale outcomeで無変更とする。訂正は新revisionを作り旧ACKをActivation上無効化する。`deliveries`にはUTCの`scheduled_evaluation_at`を持たせ、`(loop_id,basis_revision,reason_code,scheduled_evaluation_at)`の一意制約を置く。作成・送信直前にACTIVE/current revision/newer decision/channel permissionを再検証し、stale行は送信しない。duplicate ACK、stale ACK、訂正、duplicate delivery、stale sendのfixtureを実装時に検証する。
 - D09（2026-09-13確定）: Supabase Cronを5分間隔、1回最大25件、`next_evaluation_at`→`loop_id`順で処理する。Loop単位transaction lockを取得できない行はskipし、1回+retry 1回（1-5秒jitter）まで。`ACT`はACTIVE/current revision/`UNSATISFIED`/同等pendingなしだけでdelivery作成可。`SILENCE`は非ACTIVEまたは`SATISFIED`/`NO_LONGER_REQUIRED`でdelivery 0件。`DEFER`は`UNKNOWN`/`CONFLICT`/一時障害/安全な送信条件不成立で、15分後へ再評価を進めdelivery 0件。D08再検証を送信直前に行い、bounded batch・lock競合・retry exhaustion・decision table・stale・SILENCE/DEFER zero-deliveryを実装時にfixture検証する。
+- D11（2026-09-15作業提案）: Raw削除、作成から最大7日、Account削除、再識別不能な集計値のみ保持、Supabase sanitized telemetry、外部crash/session replay/analytics SDKなしをADR-011に記録した。P1アプリはRaw等のバックアップ／エクスポートとRawのディスクキャッシュを作らない。事業者バックアップの保持・削除反映・復元時の扱いは公式条件とDPA確認まで未決で、参加者データ開始を止める。
 - D07-R（redaction sub-gate, draft）: 直接識別子候補を列挙し、server-side adapter前の処理境界、fail-closed、fixture検証を定義する。日本語人名・住所の検出戦略、削除/placeholder、誤検知許容、証明閾値は人間ゲートまで未決。対象が確定するまで参加者/provider通信は開始しない。
 - Loop B（plan）: 既存Beads `obo-main-gil.7-.13` と `.28` を依存順に使い、重複タスクを作らない。
 - Loop B review: `bd dep cycles`、各BeadのAcceptance/Verification、D14→L00のブロッカーを確認する。
@@ -125,7 +126,7 @@ MVPの完成はP1の実施とExit Artifactの確定までとする。`PROCEED P2
 | U08 | 解決済み | `basis_revision`、current revision ACK、訂正による旧ACK無効化、stale ACK戻り値を契約 | L06 Activation の正しさ | D08 / ADR-008 |
 | U09 | 解決済み | bounded batch、Cron頻度、ロック方式、失敗/再試行、ACT/SILENCE/DEFER判定規則をADR-009で固定 | L07 の通知品質/負荷 | D09 / ADR-009 |
 | U10 | 未記載 | Expo Push は初期利用とあるが、資格情報、Push有効化時期、通知許可拒否時のin-app代替、controlled-proof tolerance が未定 | L08 | D10 |
-| U11 | 未記載 | Account削除の「release privacy policy」、保持期間、匿名化対象、ログ/クラッシュ報告ベンダーが未定 | L11 | D11 |
+| U11 | 部分解決 | Raw削除、7日上限、Account削除、集計値のみの保持、Supabase sanitized telemetry、外部報告SDKなしをADR-011で固定。事業者バックアップの保持・削除反映・復元時の扱いは未記載 | L11 | D11 |
 | U12 | 未記載 | P1は5参加者/10 loop等を規定するが、募集/同意文言、インシデントのcritical判定、レポート責任者が未定 | L12 とPASS判定 | D12/D13 |
 | U13 | 解決済み | ADR-005でLM00/LM10/LM20/LM30の正確なテーブル割当とL02/L08の追加境界を固定 | L02/L08の移行境界 | `docs/decisions/ADR-005-command-boundary-and-migrations.md` |
 | U14 | 未記載 | Supabase既定メール送信は外部P1参加者へのOTP送信に使えず、custom SMTPの事業者、処理地域、保持・削除条件が未定 | L01 と外部P1ログイン | D14 |
