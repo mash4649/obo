@@ -63,7 +63,7 @@ D01-D13の回答を決定記録にし、P0-P1外を有効化せず、L00の依�
 - D09（2026-09-13確定）: Supabase Cronを5分間隔、1回最大25件、`next_evaluation_at`→`loop_id`順で処理する。Loop単位transaction lockを取得できない行はskipし、1回+retry 1回（1-5秒jitter）まで。`ACT`はACTIVE/current revision/`UNSATISFIED`/同等pendingなしだけでdelivery作成可。`SILENCE`は非ACTIVEまたは`SATISFIED`/`NO_LONGER_REQUIRED`でdelivery 0件。`DEFER`は`UNKNOWN`/`CONFLICT`/一時障害/安全な送信条件不成立で、15分後へ再評価を進めdelivery 0件。D08再検証を送信直前に行い、bounded batch・lock競合・retry exhaustion・decision table・stale・SILENCE/DEFER zero-deliveryを実装時にfixture検証する。
 - D11（2026-09-21確定）: Raw削除、作成から最大7日、Account削除、再識別不能な集計値のみ保持、Supabase sanitized telemetry、外部crash/session replay/analytics SDKなしをADR-011で確定した。P1はSupabase ProのDaily Backup（保持上限7日）のみ、PITR・手動dump・外部backup・永続cacheなし。復元は隔離プロジェクトのみで、公式条件・DPA・削除／復元fixture evidenceがrelease gate。
 - D12（2026-09-21確定）: 招待制の記名成人5名以上・10 loop、versioned consent、撤回時zero-processing、Critical Incident、誰でも緊急停止可能・Product OwnerとPrivacy/Security Ownerが共同再開、専用運用窓口をADR-012で確定した。実参加者募集は同意・incident evidence後。
-- D14（2026-09-21確定）: Amazon SES（ap-northeast-1東京）のcustom SMTP、認証専用ドメイン、OTP値・本文非記録、匿名化送信ログ30日、再送3回/15分、3連続失敗または直近10分5件以上で失敗率20%以上なら停止、テスト送受信・DPA・ドメイン認証をADR-014で確定した。
+- D14（2026-09-22 provider amendment）: Brevo Free（300通/日）のcustom SMTP、リージョン非固定、認証専用ドメイン、OTP値・本文非記録、Brevo log retention最短1か月・preview/tracking無効、アプリ匿名化送信ログ30日、再送3回/15分、3連続失敗または直近10分5件以上で失敗率20%以上なら停止、テスト送受信・DPA・ドメイン認証をADR-014で確定した。
 - D07-R（redaction sub-gate, draft）: 直接識別子候補を列挙し、server-side adapter前の処理境界、fail-closed、fixture検証を定義する。日本語人名・住所の検出戦略、削除/placeholder、誤検知許容、証明閾値は人間ゲートまで未決。対象が確定するまで参加者/provider通信は開始しない。
 - Loop B（plan）: 既存Beads `obo-main-gil.7-.13` と `.28` を依存順に使い、重複タスクを作らない。
 - Loop B review: `bd dep cycles`、各BeadのAcceptance/Verification、D14→L00のブロッカーを確認する。
@@ -131,7 +131,7 @@ MVPの完成はP1の実施とExit Artifactの確定までとする。`PROCEED P2
 | U11 | 解決済み | Raw削除、7日上限、Account削除、集計値のみの保持、Supabase sanitized telemetry、外部報告SDKなし、Pro Daily Backupのみ・PITR/手動dump/外部backupなし、隔離復元をADR-011で固定。公式条件・DPA・fixture evidenceはrelease gate | L11 | ADR-011 |
 | U12 | 解決済み | 招待制・記名成人5名以上・10 loop、versioned consent、撤回、Critical Incident、停止／再開権限、支援窓口をADR-012で固定。レポート責任者はD13 | L12 とPASS判定 | ADR-012 / D13 |
 | U13 | 解決済み | ADR-005でLM00/LM10/LM20/LM30の正確なテーブル割当とL02/L08の追加境界を固定 | L02/L08の移行境界 | `docs/decisions/ADR-005-command-boundary-and-migrations.md` |
-| U14 | 解決済み | Amazon SES東京、custom SMTP、OTP／本文非記録、匿名化ログ30日、再送・停止基準、DPA・ドメイン認証・テスト送受信をADR-014で固定 | L01 と外部P1ログイン | ADR-014 |
+| U14 | 解決済み | Brevo Free、300通/日、リージョン非固定、custom SMTP、OTP／本文非記録、Brevo retention最短1か月・preview/tracking無効、匿名化ログ30日、再送・停止基準、DPA・ドメイン認証・テスト送受信をADR-014で固定 | L01 と外部P1ログイン | ADR-014 |
 
 ## Gate-locked backlog（作成・実装しない）
 

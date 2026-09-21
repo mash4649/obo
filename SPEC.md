@@ -43,7 +43,7 @@ Each item below is a human gate. A value absent from the source pack remains `�
 - **D11 / `privacy-ops`**: ADR-011をAcceptedとする。P1はSupabase ProのDaily Backup（保持上限7日）のみを使い、PITR、手動dump、外部バックアップ、永続キャッシュを使わない。ライブDBの削除は即時、復元は隔離プロジェクトのみ。公式条件・DPA・削除／復元fixtureのevidenceが揃うまで参加者データを送らない。
 - **D12 / `pilot-governance`**: ADR-012をAcceptedとする。招待制の記名成人5名以上・10 loop、versioned consent、撤回時zero-processing、Critical Incident、緊急停止・再開権限、参加者支援窓口を固定した。実参加者募集は同意文言・incident evidenceのrelease gate後に行う。
 - **D13 / `pilot-governance`**: report SQL, denominator from ADR-001, evidence bundle, owner, review date, and one of `PROCEED P2` / `ITERATE P1` / `RECONSIDER WEDGE`.
-- **D14 / `transaction-email`**: ADR-014をAcceptedとする。Amazon SES（ap-northeast-1東京）、TLS SMTP、認証専用ドメイン、匿名化送信ログ30日、再送3回/15分、失敗率20%または3連続失敗で停止、DPA・ドメイン認証・外部テストをrelease gateとする。
+- **D14 / `transaction-email`**: ADR-014をAcceptedとする。Brevo Free（300通/日）、TLS SMTP port 587、リージョン非固定、認証専用ドメイン、Brevo log retention最短1か月・preview/tracking無効、アプリ匿名化送信ログ30日、再送3回/15分、失敗率20%または3連続失敗で停止、DPA・ドメイン認証・外部テストをrelease gateとする。
 
 ## Commands
 
