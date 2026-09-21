@@ -42,7 +42,7 @@ Each item below is a human gate. A value absent from the source pack remains `�
 - **D10 / `attention-client`**: Push qualification, token lifecycle, permission denied behavior, in-app fallback, provider failure UX, and no-raw payload contract. Beadsではaccepted noteがあるが、ADR-010が現ワークツリーにないため証跡は未確認で、実装gateを維持する。
 - **D11 / `privacy-ops`**: ADR-011をAcceptedとする。P1はSupabase ProのDaily Backup（保持上限7日）のみを使い、PITR、手動dump、外部バックアップ、永続キャッシュを使わない。ライブDBの削除は即時、復元は隔離プロジェクトのみ。公式条件・DPA・削除／復元fixtureのevidenceが揃うまで参加者データを送らない。
 - **D12 / `pilot-governance`**: ADR-012をAcceptedとする。招待制の記名成人5名以上・10 loop、versioned consent、撤回時zero-processing、Critical Incident、緊急停止・再開権限、参加者支援窓口を固定した。実参加者募集は同意文言・incident evidenceのrelease gate後に行う。
-- **D13 / `pilot-governance`**: report SQL, denominator from ADR-001, evidence bundle, owner, review date, and one of `PROCEED P2` / `ITERATE P1` / `RECONSIDER WEDGE`.
+- **D13 / `pilot-governance`**: ADR-013をAcceptedとする。分母は`eligible_at`で固定した全`eligible_open_loop`、Activation分子は7日以内のcurrent-revision `OFFLOAD_RECEIPT_ACKED`。matured successは`activated_at`から7日後のvalid SOCまたはlegitimate Retireのみとする。データ準備は10 loops・5 participants・5 matured contexts、`PROCEED P2`はActivation 60%以上かつ指定のSOC/OWNED条件と5つのゼロ条件、`ITERATE P1`は35–59%または理解/parallel tracking課題、2回後も35%未満またはparallel tracking継続なら`RECONSIDER WEDGE`。Measurement LeadがSQL/evidence bundle、Privacy/Security Ownerが検証とHOLD/STOP、Product Ownerが最終判定を担う。実SQLと証跡はrelease gate。
 - **D14 / `transaction-email`**: ADR-014をAcceptedとする。Brevo Free（300通/日）、TLS SMTP port 587、リージョン非固定、認証専用ドメイン、Brevo log retention最短1か月・preview/tracking無効、アプリ匿名化送信ログ30日、再送3回/15分、失敗率20%または3連続失敗で停止、DPA・ドメイン認証・外部テストをrelease gateとする。
 
 ## Commands
