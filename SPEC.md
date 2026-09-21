@@ -41,9 +41,9 @@ Each item below is a human gate. A value absent from the source pack remains `�
 - **D09 / `delivery-proof`**: Cron cadence, bounded batch, per-loop lock, retry ceiling/backoff, and the ACT/SILENCE/DEFER decision table are accepted. Closed/satisfied/retired loops never create deliveries; scheduler integration evidence remains an implementation gate.
 - **D10 / `attention-client`**: Push qualification, token lifecycle, permission denied behavior, in-app fallback, provider failure UX, and no-raw payload contract. Beadsではaccepted noteがあるが、ADR-010が現ワークツリーにないため証跡は未確認で、実装gateを維持する。
 - **D11 / `privacy-ops`**: ADR-011をAcceptedとする。P1はSupabase ProのDaily Backup（保持上限7日）のみを使い、PITR、手動dump、外部バックアップ、永続キャッシュを使わない。ライブDBの削除は即時、復元は隔離プロジェクトのみ。公式条件・DPA・削除／復元fixtureのevidenceが揃うまで参加者データを送らない。
-- **D12 / `pilot-governance`**: recruitment and consent wording, five-person cohort handling, withdrawal/incident runbook, critical incident definition, pause/stop authority, and participant support channel.
+- **D12 / `pilot-governance`**: ADR-012をAcceptedとする。招待制の記名成人5名以上・10 loop、versioned consent、撤回時zero-processing、Critical Incident、緊急停止・再開権限、参加者支援窓口を固定した。実参加者募集は同意文言・incident evidenceのrelease gate後に行う。
 - **D13 / `pilot-governance`**: report SQL, denominator from ADR-001, evidence bundle, owner, review date, and one of `PROCEED P2` / `ITERATE P1` / `RECONSIDER WEDGE`.
-- **D14 / `transaction-email`**: custom SMTP provider, processing region, email/OTP log retention and deletion, DPA/processor approval, outage stop rule, and test delivery evidence.
+- **D14 / `transaction-email`**: ADR-014をAcceptedとする。Amazon SES（ap-northeast-1東京）、TLS SMTP、認証専用ドメイン、匿名化送信ログ30日、再送3回/15分、失敗率20%または3連続失敗で停止、DPA・ドメイン認証・外部テストをrelease gateとする。
 
 ## Commands
 
