@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed（D11。バックアップ／キャッシュの事業者保持条件が未決のため未承認）
+Accepted（2026-09-21。Supabaseバックアップ境界を確定。実装・DPA evidenceはrelease gate）
 
 ## Context
 
@@ -17,19 +17,21 @@ P1は記名された成人参加者を扱うが、外部AI、Push、ログ、ク
 - `DELETE_ACCOUNT` はアクセスを失効し、将来の評価・配信を取消した後、Raw、device token、アカウントに紐づくsemantic/audit/telemetryを削除する。再識別不能な集計値のみ保持可とし、D13はその集計値だけを読む。
 - 外部クラッシュ報告、session replay、product analytics SDKは使わない。Supabase内のsanitized telemetry/deletion auditは匿名化済みerror code、時刻、app version、OS versionだけを保持し、Raw、token、PII、breadcrumb、prompt/response、exception bodyを含めない。
 
-### P1バックアップ／キャッシュ境界（作業提案・未承認）
+### P1バックアップ／キャッシュ境界
 
 - アプリはRaw、device token、prompt/responseのバックアップまたはエクスポートを作らない。
 - Rawは端末ディスクへキャッシュせず、Capture中のメモリ上だけで扱い、送信完了・明示的破棄・logout時に破棄する。
 - P1では非Rawを含む永続表示キャッシュも作らない。必要になった場合は、保持・削除・復元を別ADRで決める。
-- Supabaseその他事業者の管理バックアップはアプリの削除経路ではない。保持期間、削除反映、復元時の扱いは、事業者の公式条件とDPAを確認するまで未決とする。
-- 事業者バックアップ条件の確認と受入記録が完了するまで、実参加者データではなくsynthetic/de-identified fixtureだけを使う。
+- SupabaseはProプランのDaily Backupのみを使い、PITRはP1では有効化しない。Daily Backupの保持は公式仕様の直近7日を上限とする。
+- 管理バックアップはアプリの削除経路ではない。ライブDB上の削除は即時に実行し、バックアップ上の残存は最長7日以内に自動失効する前提をプライバシー説明とDPA確認へ反映する。
+- 復元は本番DBへ直接戻さず、隔離した新規プロジェクトへ行う。削除済みRaw／Accountを再送信・再配信しないことを確認するまで参加者通信を再開しない。
+- P1では手動dump、外部バックアップ、Rawを含むエクスポートを作らない。
 
 ## Verification
 
 - D11実装時に、Rawのディスクキャッシュ0件、削除失敗時のpending維持、アカウント削除後のアカウント関連データ0件（許可された集計を除く）、ログ／telemetryの禁止フィールド0件をfixtureで確認する。
-- 事業者ごとのバックアップ保持・削除反映・復元手順を公式文書とDPAで記録し、P1参加者データ開始前に人間が承認する。
+- Supabase公式の保持期間・復元手順とDPAの削除条件を記録し、P1参加者データ開始前に人間が承認する。
 
 ## Implementation gate
 
-D11は本ADRの確定済みサブ決定を実装境界として利用できるが、バックアップ／キャッシュの事業者条件が承認されるまで外部P1データを有効化しない。
+D11の契約は確定した。Raw削除、DPA evidence、隔離復元、禁止フィールドのfixtureが揃うまで外部P1データは有効化しない。
