@@ -158,7 +158,7 @@ The following values are accepted. They do not authorize participant traffic unt
 
 ## D07-R Direct-Identifier Redaction Implementation Gate
 
-The following is a planning draft for the accepted high-level boundary; it is not yet an implementation contract.
+The following is the accepted implementation contract for the high-level boundary. Participant/provider traffic remains disabled until its fixtures and D07 activation evidence pass.
 
 - Candidate direct-identifier categories: personal names, email addresses, phone numbers, postal addresses, account/user/device identifiers, and URLs, file paths, or filenames containing identifiers.
 - The redaction boundary is server-side and must run before the provider adapter. The adapter must never receive the original Raw text as a fallback.
@@ -166,9 +166,11 @@ The following is a planning draft for the accepted high-level boundary; it is no
 - A detector miss, ambiguous match, unsupported category, or redaction error must fail closed: no external-AI request; keep the capture local/held and show a generic re-entry path.
 - D06 SECRET/SENSITIVE/UNCLASSIFIED rejection remains authoritative and is not replaced by this redaction step.
 - R1 taxonomy: deterministic syntax may support email, phone, identifier-bearing URL parts, and UUID/approved app-ID formats. Personal names, free-form postal addresses, opaque IDs, and unknown syntax are unsupported in P1 and must not become implicit allow.
-- Still `未決`: exact category grammar, remove-versus-placeholder behavior, placeholder format, false-positive tolerance, and the fixture threshold for proving that adapter input contains no direct identifier. Japanese name/address detection is explicitly not guaranteed in P1; R2 must preserve deny-by-default for those categories.
+- D07-R contract: email is parsed as `local-part@domain`; phone is `+`/`0`-prefixed with 10–15 digits after separators; UUID and only `obo_[a-z0-9]{16,64}` app IDs are supported; URL userinfo/query/fragment and identifier-like path segments are redacted while opaque path segments deny; absolute POSIX/Windows/UNC paths are replaced and ambiguous standalone filenames deny. Personal names, free-form addresses, Japanese natural-language identifiers, unknown opaque IDs, and ambiguous matches deny by default.
+- Replacement uses `<EMAIL_1>`, `<PHONE_1>`, `<ID_1>`, `<URL_TOKEN_1>`, and `<PATH_1>` in occurrence order, with `policyVersion=d07-r/1`. The original-to-placeholder map is memory-only for one request and is never persisted, logged, or sent to the provider.
+- False positives are allowed; false negatives are not. Required fixtures must pass 100%: allowed inputs contain zero original identifier literals, and deny/ambiguous/unsupported/error/D06-deny/inactive-consent cases reach the adapter zero times. Retries reuse the same redacted payload and the same input is deterministic.
 
-The Japanese name/address items are intentionally candidates only. P1 must not claim that free-form names or addresses are removed until a deterministic or explicitly bounded strategy and its fail-closed tests are accepted.
+Japanese name/address detection is intentionally not claimed in P1; those categories remain fail-closed.
 
 ## Loop A Review (2026-09-12)
 

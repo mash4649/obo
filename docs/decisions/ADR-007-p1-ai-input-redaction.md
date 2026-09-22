@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted for provider/data contract; activation evidence and redaction implementation tests remain required before participant traffic.
+Accepted（provider/data contractとD07-R実装契約。activation evidenceとredaction実装テストは参加者traffic前のrelease gate）
 
 ## Date
 
@@ -24,13 +24,7 @@ OpenAIのデータ制御仕様では、APIデータは明示的なopt-inがな�
 
 外部AIへはRawをそのまま送信しない。Rawからローカルで直接識別子を除去または置換したテキストだけを、D06の`PRIVATE`判定・active consent・D07 provider approvalの後に送信する。
 
-次の項目は実装・activation evidenceとして残す。
-
-- 除去か置換か、置換時のプレースホルダー形式
-- 検出不能・曖昧・処理失敗時の具体的なhold/re-entry UX
-- 置換後テキストの品質評価とテスト閾値
-
-上記が確定するまで、参加者の実データを外部providerへ送信しない。
+参加者の実データは、後述のD07-R契約とactivation evidenceが揃うまで外部providerへ送信しない。
 
 ## Direct-Identifier Taxonomy (P1 R1 decision)
 
@@ -44,7 +38,34 @@ OpenAIのデータ制御仕様では、APIデータは明示的なopt-inがな�
 | Free-form postal addresses | Not guaranteed in P1 free-form text | Unsupported category; external-AI route is denied unless already removed by an approved local transform |
 | Other quasi-identifiers (for example exact dates, workplace, or unique facts) | Not part of R1 taxonomy | Governed by D06/D11; never silently treated as safe by this ADR |
 
-The supported syntax sets and the remove-versus-placeholder operation remain R2 implementation decisions. The important R1 invariant is that an unsupported or unknown category is not an implicit allow.
+The supported syntax sets and the remove-versus-placeholder operation are fixed by the D07-R contract below. The important invariant is that an unsupported or unknown category is not an implicit allow.
+
+## D07-R Implementation Contract
+
+### Supported syntax and replacement
+
+- Emailは、`local-part@domain`として構文解析できるtokenを検出する。表示名付き、壊れたdomain、複数候補が重なる場合は`DENY`とする。配送可否は判定しない。
+- Phoneは、`+`で始まる国際形式、または`0`で始まる国内形式で、区切り文字を除いた数字が10–15桁のtokenを検出する。候補が日付・注文番号等とも解釈できる場合は`DENY`とする。
+- UUIDはcanonical UUID形式を検出する。アプリIDは`obo_[a-z0-9]{16,64}`だけを許可し、それ以外のopaque IDは`DENY`とする。
+- `http`/`https` URLは構文解析する。userinfo、query、fragment、UUID/app-IDを含むpath segmentは該当部分を置換し、opaqueなpath segmentや不正URLは`DENY`とする。hostだけの公開URLは識別子候補がなければ許可する。
+- POSIX、Windows、UNCの絶対pathはpath全体を置換する。pathを伴わないfilenameはidentifier-like tokenであれば`DENY`、判定不能なら`DENY`とする。
+- 個人名、自由記述住所、日本語の自然文に埋まる未知の識別子はP1で自動検出・安全化を保証しない。候補が残る可能性がある場合は`DENY`とする。手動overrideは設けない。
+
+検出した値は削除ではなく、構造を保つ固定placeholderへ置換する。placeholderは`<EMAIL_1>`、`<PHONE_1>`、`<ID_1>`、`<URL_TOKEN_1>`、`<PATH_1>`の形式とし、番号は1リクエスト内の出現順で付ける。元値との対応表はリクエスト中のメモリに限り、保存・ログ・telemetry・retry payload以外へ渡さない。`policyVersion`は`d07-r/1`とする。
+
+### Ambiguity and false-positive policy
+
+- 判定不能、複数カテゴリに一致、未対応カテゴリ、検出例外はすべて`DENY`とする。
+- false positive（安全側の過剰置換）は許容する。false negative（直接識別子の外部送信）は許容しない。
+- 置換で文脈品質が低下した場合も、セキュリティ閾値を緩和せず、fixture品質評価またはP1再検討で扱う。
+
+### Fixture acceptance threshold
+
+- 必須fixtureの全ケースを100%合格とする。統計的な見逃し率の推定で代替しない。
+- `ALLOW`はadapterへ`ApprovedAdapterInput`だけを渡し、元のidentifier literalを0件とする。
+- `DENY`、曖昧、未対応、例外、D06 deny、inactive consentはadapter到達0回とする。
+- retryは同一のredacted payloadを再利用し、Raw・元prompt・placeholder対応表を再生成しない。
+- 同一入力を2回処理してもplaceholder形式とdeny/allow結果が変わらないことを確認する。
 
 ## Redaction-to-Adapter Boundary (P1 R2 decision)
 

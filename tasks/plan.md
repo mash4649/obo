@@ -66,21 +66,21 @@ D01-D13の回答を決定記録にし、P0-P1外を有効化せず、L00の依�
 - D13（2026-09-22確定）: ADR-001の全eligible分母と7日窓を採用し、10 loops・5 participants・5 matured contextsをデータ準備、Activation 60%以上等の`PROCEED P2`、35–59%等の`ITERATE P1`、2回後も35%未満等の`RECONSIDER WEDGE`を固定した。Measurement Lead、Privacy/Security Owner、Product Ownerの責任分界とHOLD/STOP権限もADR-013で確定した。SQL/evidence bundleはrelease gate。
 - D10（2026-09-14確定）: ADR-010でIn-appを全ACTの正規かつ必須確認経路、Pushを補助チャネルとして固定した。明示的Push opt-in、iOS authorized permission、active consent、ACTIVE token、送信直前再検証を資格条件とし、provisional/ephemeralは除外。submission retryなし、15分後ticket単回reconcile、missing/errorは`RECEIPT_ERROR`、`DeviceNotRegistered`はinstallation無効化、permission/provider障害時はIn-appを維持する。opt-in撤回・logout・同意撤回・Account削除・token更新後は旧installationを使わず、payloadはRaw/PIIなし・推測不能なopaque参照に限定する。L08 fixtureと実機証跡はrelease gate。
 - D14（2026-09-22 provider amendment）: Brevo Free（300通/日）のcustom SMTP、リージョン非固定、認証専用ドメイン、OTP値・本文非記録、Brevo log retention最短1か月・preview/tracking無効、アプリ匿名化送信ログ30日、再送3回/15分、3連続失敗または直近10分5件以上で失敗率20%以上なら停止、テスト送受信・DPA・ドメイン認証をADR-014で確定した。
-- D07-R（redaction sub-gate, draft）: 直接識別子候補を列挙し、server-side adapter前の処理境界、fail-closed、fixture検証を定義する。日本語人名・住所の検出戦略、削除/placeholder、誤検知許容、証明閾値は人間ゲートまで未決。対象が確定するまで参加者/provider通信は開始しない。
+- D07-R（2026-09-22確定）: ADR-007で、email、10–15桁の`+`/`0`始まりphone、canonical UUID、`obo_[a-z0-9]{16,64}` app-ID、URLの識別子部分、絶対pathを決定的に扱う契約を固定した。置換placeholderは`<EMAIL_1>`等、`policyVersion=d07-r/1`、対応表はリクエスト中のメモリ限定。個人名・自由文住所・日本語自然文識別子・未知opaque ID・曖昧なfilename/URLはdeny-by-default。false positiveは許容、false negativeは不可。必須fixtureは100%合格、deny/ambiguous/unsupported/error/D06 deny/inactive consentはadapter到達0回。参加者/provider通信はactivation evidenceまで停止する。
 - Loop B（plan）: 既存Beads `obo-main-gil.7-.13` と `.28` を依存順に使い、重複タスクを作らない。
 - Loop B review: `bd dep cycles`、各BeadのAcceptance/Verification、D14→L00のブロッカーを確認する。
 
 ### D07-R plan（起票済み）
 
-1. **`obo-main-gil.7.1` 直接識別子taxonomy**
+1. **`obo-main-gil.7.1` 直接識別子taxonomy（完了）**
    - Acceptance: 対象候補（個人名・メール・電話・住所・アカウント/端末識別子・識別子を含むURL/パス/ファイル名）ごとに、P1で検出可能か、未対応ならどう拒否するかがD07/ADR-007に記録される。
    - Verify: 仕様レビューで未対応カテゴリが暗黙のallowになっていないことを確認する。
    - Dependencies: なし。Files: `SPEC.md`, `docs/decisions/ADR-007-p1-ai-input-redaction.md`。
-2. **`obo-main-gil.7.2` redaction adapter boundary**
+2. **`obo-main-gil.7.2` redaction adapter boundary（完了）**
    - Acceptance: server-sideのprovider adapter直前に一度だけredactionを適用し、`ApprovedAdapterInput`以外をadapterへ渡さない。Raw fallbackを持たず、未対応・曖昧・失敗は外部AIリクエスト0回になる。retryは同じredacted valueを再利用する。
    - Verify: adapter spyで、許可fixtureはredacted textだけを受け、拒否fixtureは到達回数0であることを確認する。
    - Dependencies: 1。Files: L03/L05のAI adapter境界とその単体テスト。
-3. **`obo-main-gil.7.3` fixture/verification contract**
+3. **`obo-main-gil.7.3` fixture/verification contract（完了）**
    - Acceptance: 日本語を含むallow/deny/ambiguous/error fixtureがあり、adapter受信値に直接識別子がなく、失敗時のgeneric re-entry経路が確認できる。
    - Verify: `npm test`のredaction/adapter fixture suiteと`bd lint`、`bd dep cycles`が成功する。
    - Dependencies: 2。Files: redaction fixture/test files、ADR-007の検証節。
