@@ -64,6 +64,7 @@ D01-D13の回答を決定記録にし、P0-P1外を有効化せず、L00の依�
 - D11（2026-09-21確定）: Raw削除、作成から最大7日、Account削除、再識別不能な集計値のみ保持、Supabase sanitized telemetry、外部crash/session replay/analytics SDKなしをADR-011で確定した。P1はSupabase ProのDaily Backup（保持上限7日）のみ、PITR・手動dump・外部backup・永続cacheなし。復元は隔離プロジェクトのみで、公式条件・DPA・削除／復元fixture evidenceがrelease gate。
 - D12（2026-09-21確定）: 招待制の記名成人5名以上・10 loop、versioned consent、撤回時zero-processing、Critical Incident、誰でも緊急停止可能・Product OwnerとPrivacy/Security Ownerが共同再開、専用運用窓口をADR-012で確定した。実参加者募集は同意・incident evidence後。
 - D13（2026-09-22確定）: ADR-001の全eligible分母と7日窓を採用し、10 loops・5 participants・5 matured contextsをデータ準備、Activation 60%以上等の`PROCEED P2`、35–59%等の`ITERATE P1`、2回後も35%未満等の`RECONSIDER WEDGE`を固定した。Measurement Lead、Privacy/Security Owner、Product Ownerの責任分界とHOLD/STOP権限もADR-013で確定した。SQL/evidence bundleはrelease gate。
+- D10（2026-09-14確定）: ADR-010でIn-appを全ACTの必須確認経路、Pushを補助経路として固定した。明示的Push opt-in、iOS authorized permission、active consent、ACTIVE token、送信直前再検証を資格条件とし、provisional/ephemeralは除外。submission retryなし、15分後ticket単回reconcile、missing/errorは`RECEIPT_ERROR`、`DeviceNotRegistered`はinstallation無効化、permission/provider障害時はIn-appを維持する。L08 fixtureと実機証跡はrelease gate。
 - D14（2026-09-22 provider amendment）: Brevo Free（300通/日）のcustom SMTP、リージョン非固定、認証専用ドメイン、OTP値・本文非記録、Brevo log retention最短1か月・preview/tracking無効、アプリ匿名化送信ログ30日、再送3回/15分、3連続失敗または直近10分5件以上で失敗率20%以上なら停止、テスト送受信・DPA・ドメイン認証をADR-014で確定した。
 - D07-R（redaction sub-gate, draft）: 直接識別子候補を列挙し、server-side adapter前の処理境界、fail-closed、fixture検証を定義する。日本語人名・住所の検出戦略、削除/placeholder、誤検知許容、証明閾値は人間ゲートまで未決。対象が確定するまで参加者/provider通信は開始しない。
 - Loop B（plan）: 既存Beads `obo-main-gil.7-.13` と `.28` を依存順に使い、重複タスクを作らない。
@@ -128,7 +129,7 @@ MVPの完成はP1の実施とExit Artifactの確定までとする。`PROCEED P2
 | U07 | 解決済み | `deliveries` にUTC `scheduled_evaluation_at`を持たせ、`(loop_id, basis_revision, reason_code, scheduled_evaluation_at)`を一意制約にする | L07-L08 の重複/stale配信防止をDBで証明 | D08 / ADR-008 |
 | U08 | 解決済み | `basis_revision`、current revision ACK、訂正による旧ACK無効化、stale ACK戻り値を契約 | L06 Activation の正しさ | D08 / ADR-008 |
 | U09 | 解決済み | bounded batch、Cron頻度、ロック方式、失敗/再試行、ACT/SILENCE/DEFER判定規則をADR-009で固定 | L07 の通知品質/負荷 | D09 / ADR-009 |
-| U10 | 未記載 | Expo Push は初期利用とあるが、資格情報、Push有効化時期、通知許可拒否時のin-app代替、controlled-proof tolerance が未定 | L08 | D10 |
+| U10 | 解決済み | ADR-010でExpo Push Service、明示的Push opt-in、iOS authorized permission、ACTIVE token、In-app必須経路、失敗時の`RECEIPT_ERROR`/installation無効化/単回reconcileを固定。実Pushはcredential・device・fixture・実機証跡後に有効化 | L08 | ADR-010 |
 | U11 | 解決済み | Raw削除、7日上限、Account削除、集計値のみの保持、Supabase sanitized telemetry、外部報告SDKなし、Pro Daily Backupのみ・PITR/手動dump/外部backupなし、隔離復元をADR-011で固定。公式条件・DPA・fixture evidenceはrelease gate | L11 | ADR-011 |
 | U12 | 解決済み | 招待制・記名成人5名以上・10 loop、versioned consent、撤回、Critical Incident、停止／再開権限、支援窓口をADR-012で固定。レポート責任者と判定閾値はADR-013で固定 | L12 とPASS判定 | ADR-012 / ADR-013 |
 | U13 | 解決済み | ADR-005でLM00/LM10/LM20/LM30の正確なテーブル割当とL02/L08の追加境界を固定 | L02/L08の移行境界 | `docs/decisions/ADR-005-command-boundary-and-migrations.md` |
