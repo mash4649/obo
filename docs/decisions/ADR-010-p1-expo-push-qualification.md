@@ -12,17 +12,18 @@ P1の通知は、通知許可やPush providerの状態に依存して確認経�
 
 ### 経路と資格条件
 
-- すべての`ACT`に対してIn-app確認を必ず作成する。Pushを使わない参加者にも同じ確認経路を提供する。
-- Pushは補助経路であり、同一`ACT`についてIn-appとPushの二重delivery行を作らない。既存のD08 semantic keyを共有する。
+- すべての`ACT`に対してIn-app確認を必ず作成する。Pushを使わない参加者にも同じ確認経路を提供する。In-appの確認状態が正規のdelivery状態である。
+- Pushは補助チャネルであり、同一`ACT`についてIn-appとPushの二重delivery行を作らない。1つのD08 semantic keyに対するチャネル状態として扱う。
 - Push providerはExpo Push Service、クライアント登録は`expo-notifications`とする。
 - Pushは、明示的なアプリ内Push opt-in、iOSの`authorized` permission、ACTIVEなdevice installation token、active consent、送信時のLoop/revision再検証をすべて満たす場合だけ有効にする。
 - iOSのprovisional/ephemeral permissionはP1資格として扱わない。資格を満たさない場合はIn-appのみとする。
 - Expo credentialとprovider secretはserver-side secretとして保持し、クライアントへ渡さない。実Pushはcredential・device・permissionの証跡が揃うまで無効とする。
+- アプリのPush opt-in撤回、active consentの撤回、logout、Account削除、installationの無効化は、以後のPush資格を直ちに失効させる。tokenの更新・再登録は新しいinstallation状態として扱う。
 
 ### Payloadと状態
 
-- Push payloadにはRaw、本文、個人名、詳細なSensitive情報を含めない。汎用文言とopaqueな内部参照だけを許可する。
-- Push open、ticket受付、receipt成功、時間経過はSOC、Activation、completionの証拠ではない。
+- Push payloadにはRaw、本文、個人名、詳細なSensitive情報を含めない。汎用文言と、推測不能で認証後に所有権を再確認できるopaqueな内部参照だけを許可する。
+- Push open、ticket受付、receipt成功、時間経過はSOC、Activation、completionの証拠ではない。ticket IDは送信受付の相関値に限る。
 - `DeviceNotRegistered` receiptは対象installationを`INVALID`にする。token失敗をSilent Successとして扱わない。
 
 ### Provider failureと再試行
@@ -42,6 +43,8 @@ delivery作成・送信直前に、D08/D09のLoop status、current revision、�
 - stale-send fixtureでLoopまたはrevisionが変わった送信が抑止されることを確認する。
 - provider fakeでticket受付、15分後の単回reconcile、missing/error receipt、`DeviceNotRegistered`の状態遷移を確認する。
 - Push opt-in拒否、permission拒否、token未登録、provider障害のすべてでIn-app確認が残ることを確認する。
+- opt-in撤回、logout、同意撤回、Account削除、token更新後に旧installationへ送信されないことを確認する。
+- opaque参照が認証済み所有者以外から解決できないことを確認する。
 - 実機でauthorized permissionとACTIVE tokenを確認するまで、実参加者へのPushを有効化しない。
 
 ## Implementation gate
