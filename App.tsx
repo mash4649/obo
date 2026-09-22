@@ -2,8 +2,9 @@ import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
 import { ActivityIndicator, Button, Linking, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 
-import { acceptConsent, type AuthState, CommandError, getAuthState, startRecentAuth, verifyRecentAuth, withdrawConsent } from './src/auth/command';
+import { acceptConsent, captureText, type AuthState, CommandError, getAuthState, startRecentAuth, verifyRecentAuth, withdrawConsent } from './src/auth/command';
 import { AuthError, requestEmailOtp, verifyEmailOtp } from './src/auth/emailOtp';
+import { type CaptureScope } from './src/sensitivity/preflight';
 
 export default function App() {
   const [email, setEmail] = useState('');
@@ -16,6 +17,8 @@ export default function App() {
   const [adultDeclared, setAdultDeclared] = useState(false);
   const [recentAuthCode, setRecentAuthCode] = useState<string | null>(null);
   const [withdrawalProof, setWithdrawalProof] = useState<string | null>(null);
+  const [captureScope, setCaptureScope] = useState<CaptureScope>('GENERAL_ADMIN');
+  const [captureBody, setCaptureBody] = useState('');
 
   async function sendCode() {
     setBusy(true);
@@ -125,6 +128,23 @@ export default function App() {
     }
   }
 
+  async function submitCapture() {
+    setBusy(true);
+    setMessage(null);
+
+    try {
+      const status = await captureText(captureScope, captureBody);
+      setCaptureBody('');
+      setMessage(status === 'STORED'
+        ? '保存しました。'
+        : 'この内容は処理できません。危険情報を除いて、必要なら入力し直してください。');
+    } catch (error) {
+      setMessage(error instanceof CommandError ? error.message : '保存を完了できませんでした。');
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const consentIsCurrent = authState?.consent?.status === 'ACCEPTED'
     && authState.consent.version === authState.requiredConsentVersion;
 
@@ -154,6 +174,26 @@ export default function App() {
           {authState && authState.participant && consentIsCurrent && !recentAuthCode && !withdrawalProof ? (
             <>
               <Text style={styles.copy}>同意済みです。OBO は必要な情報だけを保存します。</Text>
+              <TextInput
+                accessibilityLabel="保存する内容"
+                maxLength={2000}
+                multiline
+                onChangeText={setCaptureBody}
+                placeholder="予定や用事を入力"
+                style={styles.input}
+                value={captureBody}
+              />
+              <View style={styles.scopeRow}>
+                {(['SCHEDULE', 'HOUSEHOLD', 'SHOPPING', 'GENERAL_ADMIN'] as const).map((scope) => (
+                  <Button
+                    key={scope}
+                    color={scope === captureScope ? '#2255aa' : undefined}
+                    onPress={() => setCaptureScope(scope)}
+                    title={scope}
+                  />
+                ))}
+              </View>
+              <Button disabled={busy || !captureBody.trim()} onPress={submitCapture} title="保存する" />
               <Button disabled={busy} onPress={requestWithdrawalAuth} title="同意を撤回する" />
             </>
           ) : null}
@@ -261,5 +301,12 @@ const styles = StyleSheet.create({
   switchText: {
     flex: 1,
     marginLeft: 8,
+  },
+  scopeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'center',
+    marginBottom: 12,
   },
 });

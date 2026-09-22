@@ -4,7 +4,7 @@ jest.mock('../src/auth/supabase', () => ({
   getSupabase: () => ({ functions: { invoke: mockInvoke } }),
 }));
 
-import { CommandError, acceptConsent, getAuthState, verifyRecentAuth } from '../src/auth/command';
+import { captureText, CommandError, acceptConsent, getAuthState, verifyRecentAuth } from '../src/auth/command';
 
 describe('command boundary', () => {
   beforeEach(() => {
@@ -29,5 +29,21 @@ describe('command boundary', () => {
     await expect(verifyRecentAuth('WITHDRAW_CONSENT', 'not-a-code')).rejects.toBeInstanceOf(CommandError);
 
     expect(mockInvoke).not.toHaveBeenCalled();
+  });
+
+  it('keeps an empty capture on device', async () => {
+    await expect(captureText('SHOPPING', '  ')).rejects.toBeInstanceOf(CommandError);
+
+    expect(mockInvoke).not.toHaveBeenCalled();
+  });
+
+  it('sends a capture only through the server command boundary', async () => {
+    mockInvoke.mockResolvedValue({ data: { status: 'STORED' }, error: null });
+
+    await expect(captureText('SHOPPING', 'buy paper')).resolves.toBe('STORED');
+
+    expect(mockInvoke).toHaveBeenCalledWith('command', {
+      body: expect.objectContaining({ command: 'CAPTURE_TEXT', scope: 'SHOPPING', text: 'buy paper' }),
+    });
   });
 });

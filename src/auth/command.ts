@@ -1,4 +1,5 @@
 import { getSupabase } from './supabase';
+import { captureScopes, type CaptureScope } from '../sensitivity/preflight';
 
 export type AuthState = {
   account: { status: 'ACTIVE' | 'DELETION_PENDING' | 'DELETED' } | null;
@@ -51,6 +52,25 @@ export async function acceptConsent(timezone: string, adultDeclared: boolean): P
     idempotencyKey: idempotencyKey(),
     timezone,
   });
+}
+
+export async function captureText(scope: CaptureScope, text: string): Promise<'STORED' | 'FAILED_SAFE'> {
+  if (!captureScopes.includes(scope) || !text.trim()) {
+    throw new CommandError('保存する内容と種類を確認してください。');
+  }
+
+  const result = await invoke<{ status?: unknown }>({
+    command: 'CAPTURE_TEXT',
+    idempotencyKey: idempotencyKey(),
+    scope,
+    text,
+  });
+
+  if (result.status !== 'STORED' && result.status !== 'FAILED_SAFE') {
+    throw new CommandError('保存を完了できませんでした。');
+  }
+
+  return result.status;
 }
 
 export async function startRecentAuth(action: DestructiveAction): Promise<void> {

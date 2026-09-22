@@ -1,4 +1,5 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { preflightCapture } from '../../../src/sensitivity/preflight.ts';
 
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? '';
 const SUPABASE_ANON_KEY = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
@@ -10,6 +11,7 @@ const ACTIONS = new Set(['WITHDRAW_CONSENT', 'DELETE_RAW_CAPTURE', 'DELETE_ACCOU
 type Command =
   | 'AUTH_STATE'
   | 'ACCEPT_CONSENT'
+  | 'CAPTURE_TEXT'
   | 'START_RECENT_AUTH'
   | 'VERIFY_RECENT_AUTH'
   | 'WITHDRAW_CONSENT';
@@ -22,6 +24,8 @@ type CommandRequest = {
   proofId?: string;
   timezone?: string;
   action?: string;
+  scope?: string;
+  text?: string;
 };
 
 function response(body: unknown, status = 200) {
@@ -128,6 +132,30 @@ Deno.serve(async (req) => {
     });
 
     return error ? response({ error: 'REQUEST_DENIED' }, 403) : response({ status: 'ACTIVE' });
+  }
+
+  if (body.command === 'CAPTURE_TEXT') {
+    if (!body.idempotencyKey || !UUID.test(body.idempotencyKey)) {
+      return response({ error: 'REQUEST_DENIED' }, 400);
+    }
+
+    const preflight = preflightCapture({ scope: body.scope, text: body.text });
+    if (typeof body.scope !== 'string' || typeof body.text !== 'string') {
+      return response({ error: 'REQUEST_DENIED' }, 400);
+    }
+
+    const { data: captureId, error } = await admin.rpc('command_capture_text', {
+      p_auth_user_id: user.id,
+      p_idempotency_key: body.idempotencyKey,
+      p_raw_text: body.text,
+      p_scope: body.scope,
+      p_sensitivity_class: preflight.sensitivityClass,
+    });
+
+    return error ? response({ error: 'REQUEST_DENIED' }, 403) : response({
+      captureId,
+      status: preflight.sensitivityClass === 'PRIVATE' ? 'STORED' : 'FAILED_SAFE',
+    });
   }
 
   if (!currentSessionId || !body.action || !ACTIONS.has(body.action)) {
