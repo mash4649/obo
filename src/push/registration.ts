@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import * as Crypto from 'expo-crypto';
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
@@ -23,7 +24,7 @@ export async function enablePush(): Promise<void> {
   const token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
   let id = await AsyncStorage.getItem(INSTALLATION_KEY);
   if (!id) {
-    id = globalThis.crypto.randomUUID();
+    id = Crypto.randomUUID();
     await AsyncStorage.setItem(INSTALLATION_KEY, id);
   }
   await registerPush(id, token);

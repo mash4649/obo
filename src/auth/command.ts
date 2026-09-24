@@ -1,3 +1,4 @@
+import * as Crypto from 'expo-crypto';
 import { getSupabase } from './supabase';
 import { captureScopes, type CaptureScope } from '../sensitivity/preflight';
 
@@ -14,13 +15,11 @@ type DestructiveAction = 'WITHDRAW_CONSENT' | 'DELETE_RAW_CAPTURE' | 'DELETE_ACC
 export class CommandError extends Error {}
 
 function idempotencyKey(): string {
-  const key = globalThis.crypto?.randomUUID?.();
-
-  if (!key) {
+  try {
+    return Crypto.randomUUID();
+  } catch {
     throw new CommandError('安全な操作を開始できません。');
   }
-
-  return key;
 }
 
 async function invoke<T>(body: Record<string, unknown>): Promise<T> {
