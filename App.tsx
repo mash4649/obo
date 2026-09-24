@@ -33,15 +33,18 @@ export default function App() {
   const [socLoopIds, setSocLoopIds] = useState<string[]>([]);
   const [measuredLoopIds, setMeasuredLoopIds] = useState<string[]>([]);
   const [foreground, setForeground] = useState(AppState.currentState === 'active');
-  const [snapshotReady, setSnapshotReady] = useState(Platform.OS !== 'ios');
+  const [snapshotReady, setSnapshotReady] = useState(Platform.OS !== 'ios' && Platform.OS !== 'android');
   const [pushOptedIn, setPushOptedIn] = useState(false);
 
   useEffect(() => {
-    if (Platform.OS === 'ios') {
-      ScreenCapture.enableAppSwitcherProtectionAsync(1)
-        .then(() => setSnapshotReady(true))
-        .catch(() => setMessage('安全な表示を開始できませんでした。'));
-    }
+    const protection = Platform.OS === 'ios'
+      ? ScreenCapture.enableAppSwitcherProtectionAsync(1)
+      : Platform.OS === 'android'
+        ? ScreenCapture.preventScreenCaptureAsync()
+        : Promise.resolve();
+    protection
+      .then(() => setSnapshotReady(true))
+      .catch(() => setMessage('安全な表示を開始できませんでした。'));
   }, []);
 
   useEffect(() => {
