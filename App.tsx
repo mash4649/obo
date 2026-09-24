@@ -14,6 +14,9 @@ export default function App() {
   const [codeSentTo, setCodeSentTo] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [page, setPage] = useState<'home' | 'capture' | 'receipt' | 'tracking' | 'context' | 'settings'>('home');
+  const [selectedLoopId, setSelectedLoopId] = useState<string | null>(null);
   const [verified, setVerified] = useState(false);
   const [authState, setAuthState] = useState<AuthState | null>(null);
   const [adultDeclared, setAdultDeclared] = useState(false);
@@ -27,6 +30,7 @@ export default function App() {
   const [correctingLoopId, setCorrectingLoopId] = useState<string | null>(null);
   const [correctedState, setCorrectedState] = useState('');
   const [correctedNextEvaluation, setCorrectedNextEvaluation] = useState('');
+  const [confirmationAnswer, setConfirmationAnswer] = useState('');
   const [attentionLoopIds, setAttentionLoopIds] = useState<string[]>([]);
   const [socLoopIds, setSocLoopIds] = useState<string[]>([]);
   const [measuredLoopIds, setMeasuredLoopIds] = useState<string[]>([]);
@@ -90,6 +94,10 @@ export default function App() {
       setSocLoopIds([]);
       setMeasuredLoopIds([]);
       setCaptureBody('');
+      setConfirmationAnswer('');
+      setNotice(null);
+      setPage('home');
+      setSelectedLoopId(null);
       setEmail('');
       setCode('');
       setCodeSentTo(null);
@@ -100,13 +108,14 @@ export default function App() {
     }
   }
 
-  async function refreshLoops() {
+  async function refreshLoops(): Promise<OpenLoop[]> {
     const [loops, deliveries, flags, savedCaptures] = await Promise.all([listOpenLoops(), listInAppDeliveries(), listOutcomeFlags(), listCaptures()]);
     setOpenLoops(loops);
     setAttentionLoopIds(deliveries.map((delivery) => delivery.loop_id));
     setSocLoopIds(flags.socLoopIds);
     setMeasuredLoopIds(flags.measuredLoopIds);
     setCaptures(savedCaptures);
+    return loops;
   }
 
   async function sendCode() {
@@ -206,11 +215,12 @@ export default function App() {
 
     setBusy(true);
     setMessage(null);
+    setNotice(null);
 
     try {
       if (destructiveAction === 'DELETE_RAW_CAPTURE' && captureToDelete) {
         const status = await deleteRawCapture(captureToDelete, withdrawalProof);
-        setMessage(status === 'DELETED' ? '入力を削除しました。' : '削除を続けています。');
+        setNotice(status === 'DELETED' ? '入力のRawを削除しました。' : 'Rawの削除を続けています。');
         await refreshLoops();
       } else {
         if (destructiveAction === 'DELETE_RAW_CAPTURE') throw new CommandError('削除対象を確認できませんでした。');
@@ -251,20 +261,30 @@ export default function App() {
   async function submitCapture() {
     setBusy(true);
     setMessage(null);
+    setNotice(null);
 
     try {
       const { captureId, status } = await captureText(captureBody);
       setCaptureBody('');
-      setMessage(status === 'STORED'
-        ? '預かりました。追跡は確認後に始まります。'
-        : 'この内容は処理できません。危険情報を除いて、必要なら入力し直してください。');
-      await refreshLoops().catch(() => setMessage('預かりました。表示を更新できませんでした。'));
-      if (status === 'STORED' && process.env.EXPO_PUBLIC_P1_AI_ENABLED === 'true') {
+      if (status !== 'STORED') {
+        await refreshLoops().catch(() => {});
+        setMessage('この内容は処理できません。危険情報を除いて、必要なら入力し直してください。');
+        return;
+      }
+      setNotice('預かりました。内容は保存されています。');
+      setPage('receipt');
+      await refreshLoops().catch(() => setMessage('保存しましたが、表示を更新できませんでした。'));
+      if (process.env.EXPO_PUBLIC_P1_AI_ENABLED === 'true') {
         try {
           await requestInterpretation(captureId);
-          await refreshLoops();
+          const loops = await refreshLoops();
+          const loop = loops.find((item) => item.capture_id === captureId);
+          if (loop) {
+            setSelectedLoopId(loop.id);
+            setPage('context');
+          }
         } catch {
-          setMessage('預かりました。解釈できなかったため、追跡は始まっていません。');
+          setMessage('内容を整理できませんでした。追跡は始まっていません。');
         }
       }
     } catch (error) {
@@ -288,13 +308,34 @@ export default function App() {
     } finally { setBusy(false); }
   }
 
+  async function submitConfirmation(loop: OpenLoop) {
+    setBusy(true);
+    setMessage(null);
+    setNotice(null);
+    try {
+      if (Boolean(loop.expected_state_text) === Boolean(loop.next_evaluation_at)) {
+        throw new CommandError('この確認には直接回答できません。内容を訂正してください。');
+      }
+      const expectedState = loop.expected_state_text || confirmationAnswer.trim();
+      const nextEvaluation = loop.next_evaluation_at || localEvaluationDate(confirmationAnswer.trim());
+      await correctLoop(loop.id, expectedState, loop.due_at, nextEvaluation);
+      setConfirmationAnswer('');
+      await refreshLoops();
+      setNotice('内容を更新しました。追跡内容を確認してください。');
+    } catch (error) {
+      setMessage(error instanceof CommandError ? error.message : '回答を保存できませんでした。');
+    } finally { setBusy(false); }
+  }
+
   async function confirmReceipt(loop: OpenLoop) {
     setBusy(true);
     setMessage(null);
+    setNotice(null);
     try {
       const status = await ackOffloadReceipt(loop.id, loop.revision);
       await refreshLoops();
-      setMessage(status === 'ACKED' ? '追跡を引き受けました。' : '内容が更新されました。新しい内容を確認してください。');
+      if (status === 'ACKED') setNotice('この件はOBOが覚えておきます。');
+      else setMessage('内容が更新されました。新しい内容を確認してください。');
     } catch (error) {
       setMessage(error instanceof CommandError ? error.message : '確認を保存できませんでした。');
     } finally { setBusy(false); }
@@ -324,6 +365,10 @@ export default function App() {
 
   const consentIsCurrent = authState?.consent?.status === 'ACCEPTED'
     && authState.consent.version === authState.requiredConsentVersion;
+  const selectedLoop = openLoops.find((loop) => loop.id === selectedLoopId);
+  const nextLoop = openLoops.find((loop) => loop.status === 'ACTIVE' && attentionLoopIds.includes(loop.id))
+    ?? openLoops.find((loop) => loop.status === 'ACTIVE' && !!loop.confirmation_question)
+    ?? openLoops.find((loop) => loop.status === 'ACTIVE' && !loop.activated_at);
 
   return (
     <View style={styles.screen}>
@@ -351,28 +396,92 @@ export default function App() {
           ) : null}
           {authState && authState.participant && consentIsCurrent && !recentAuthCode && !withdrawalProof ? (
             <>
-              <Text style={styles.copy}>同意済みです。OBO は必要な情報だけを保存します。</Text>
-              <TextInput
-                accessibilityLabel="保存する内容"
-                maxLength={2000}
-                multiline
-                onChangeText={setCaptureBody}
-                placeholder="予定や用事を入力"
-                style={styles.input}
-                value={captureBody}
-              />
-              <Button disabled={busy || !captureBody.trim()} onPress={submitCapture} title="保存する" />
-              <Button disabled={busy} onPress={() => refreshLoops().catch(() => setMessage('件を読み込めませんでした。'))} title="件を更新" />
-              {openLoops.map((loop) => (
-                <View key={loop.id}>
-                  <Text style={styles.copy}>{loop.title}</Text>
+              {page === 'home' ? (
+                <>
+                  <Text style={styles.copy}>{nextLoop
+                    ? '確認が必要な件があります。'
+                    : captures.some((capture) => capture.status === 'STORED')
+                      ? '保存された入力があります。追跡はまだ始まっていません。'
+                      : captures.some((capture) => capture.status === 'FAILED_SAFE')
+                        ? '処理できなかった入力があります。必要なら預け直してください。'
+                        : captures.length === 0 && openLoops.length === 0
+                          ? 'まず、覚えておいてほしいことを預けてください。'
+                          : '今、確認が必要なことはありません。'}</Text>
+                  {nextLoop ? <Button onPress={() => { setSelectedLoopId(nextLoop.id); setPage('context'); }} title="次の確認を見る" /> : null}
+                  <Button onPress={() => setPage('capture')} title="預ける" />
+                  <Button disabled={busy} onPress={() => refreshLoops().catch(() => setMessage('件を読み込めませんでした。'))} title="表示を更新" />
+                  <Button onPress={() => setPage('tracking')} title="OBOが追っていること" />
+                  <Button onPress={() => setPage('settings')} title="設定・プライバシー" />
+                </>
+              ) : null}
+              {page === 'capture' ? (
+                <>
+                  <Text style={styles.heading}>預ける</Text>
+                  <TextInput
+                    accessibilityLabel="預ける内容"
+                    maxLength={2000}
+                    multiline
+                    onChangeText={setCaptureBody}
+                    placeholder="予定や用事を入力"
+                    style={styles.input}
+                    value={captureBody}
+                  />
+                  <Button disabled={busy || !captureBody.trim()} onPress={submitCapture} title="預ける" />
+                  <Button onPress={() => setPage('home')} title="Homeへ戻る" />
+                </>
+              ) : null}
+              {page === 'receipt' ? (
+                <>
+                  <Text style={styles.heading}>預かりました</Text>
+                  <Text style={styles.copy}>内容は保存されています。追跡はまだ始まっていません。</Text>
+                  {process.env.EXPO_PUBLIC_P1_AI_ENABLED !== 'true' ? (
+                    <Text style={styles.copy}>このプレビューでは内容の整理と追跡開始を利用できません。</Text>
+                  ) : null}
+                  <Button onPress={() => setPage('home')} title="Homeへ戻る" />
+                </>
+              ) : null}
+              {page === 'tracking' ? (
+                <>
+                  <Text style={styles.heading}>OBOが追っていること</Text>
+                  {openLoops.filter((loop) => loop.status === 'ACTIVE' && !!loop.activated_at).length === 0
+                    ? <Text style={styles.copy}>追跡中の件はありません。</Text> : null}
+                  {openLoops.map((loop) => (
+                    <Button key={loop.id} onPress={() => { setSelectedLoopId(loop.id); setPage('context'); }}
+                      title={`${loop.title}：${loop.status === 'CLOSED' ? 'これまで' : loop.activated_at ? '追跡中' : '確認待ち'}`} />
+                  ))}
+                  <Button disabled={busy} onPress={() => refreshLoops().catch(() => setMessage('件を読み込めませんでした。'))} title="表示を更新" />
+                  <Button onPress={() => setPage('home')} title="Homeへ戻る" />
+                </>
+              ) : null}
+              {page === 'context' && selectedLoop ? (
+                <>
+                  <Button onPress={() => setPage('tracking')} title="追跡内容へ戻る" />
+                  <Text style={styles.heading}>{selectedLoop.title}</Text>
+                  {openLoops.filter((loop) => loop.id === selectedLoopId).map((loop) => (
+                  <View key={loop.id}>
                   {attentionLoopIds.includes(loop.id) && loop.status === 'ACTIVE' ? <Text style={styles.copy}>確認待ちの件があります。</Text> : null}
                   <Text style={styles.copy}>実現を待つ状態: {loop.expected_state_text || '確認が必要です'}</Text>
                   <Text style={styles.copy}>日付: {loop.due_at ? new Date(loop.due_at).toLocaleString('ja-JP') : '未設定'}</Text>
+                  <Text style={styles.copy}>次の確認: {loop.next_evaluation_at ? new Date(loop.next_evaluation_at).toLocaleString('ja-JP') : '確認が必要です'}</Text>
                   <Text style={styles.copy}>OBO が確認すること: 状態が変わったかを次の評価時に確認します。</Text>
-                  <Text style={styles.copy}>今必要なこと: {loop.confirmation_question ?? '内容を確認してください。'}</Text>
+                  <Text style={styles.copy}>今必要なこと: {loop.confirmation_question ?? (loop.activated_at ? '今はありません。' : 'この内容で追跡を始めるか確認してください。')}</Text>
+                  {loop.confirmation_question && Boolean(loop.expected_state_text) !== Boolean(loop.next_evaluation_at) ? (
+                    <>
+                      <TextInput accessibilityLabel="確認への回答" onChangeText={setConfirmationAnswer}
+                        placeholder={loop.next_evaluation_at ? '済んだと判断できる状態' : 'YYYY-MM-DD HH:mm'}
+                        style={styles.input} value={confirmationAnswer} />
+                      <Button disabled={busy || !confirmationAnswer.trim()} onPress={() => submitConfirmation(loop)} title="回答を保存" />
+                    </>
+                  ) : null}
+                  {loop.confirmation_question && Boolean(loop.expected_state_text) === Boolean(loop.next_evaluation_at) ? (
+                    <Text style={styles.copy}>この確認には直接回答できません。内容を訂正してください。</Text>
+                  ) : null}
                   {loop.confirmation_question || loop.status !== 'ACTIVE' ? null : (
-                    <Button disabled={busy || !!loop.activated_at || process.env.EXPO_PUBLIC_P1_TRACKING_ENABLED !== 'true'} onPress={() => confirmReceipt(loop)} title={loop.activated_at ? '追跡中' : 'この内容で追跡を始める'} />
+                    <>
+                      {!loop.activated_at && process.env.EXPO_PUBLIC_P1_TRACKING_ENABLED !== 'true'
+                        ? <Text style={styles.copy}>このプレビューでは追跡を開始できません。</Text> : null}
+                      <Button disabled={busy || !!loop.activated_at || process.env.EXPO_PUBLIC_P1_TRACKING_ENABLED !== 'true'} onPress={() => confirmReceipt(loop)} title={loop.activated_at ? '追跡中' : 'この内容で追跡を始める'} />
+                    </>
                   )}
                   {loop.status === 'ACTIVE' && correctingLoopId === loop.id ? (
                     <>
@@ -397,23 +506,29 @@ export default function App() {
                       <Button disabled={busy} onPress={() => submitOwnership(loop, 'UNKNOWN')} title="わからない" />
                     </>
                   ) : null}
-                </View>
-              ))}
-              {captures.filter((capture) => capture.status !== 'DELETED').map((capture) => (
-                <Button
-                  key={capture.id}
-                  disabled={busy}
-                  onPress={() => requestDestructiveAuth('DELETE_RAW_CAPTURE', capture.id)}
-                  title={`入力と追跡を削除: ${new Date(capture.created_at).toLocaleDateString('ja-JP')}`}
-                />
-              ))}
-              {process.env.EXPO_PUBLIC_P1_PUSH_CLIENT_ENABLED === 'true' ? (
-                <Button disabled={busy} onPress={togglePush}
-                  title={pushOptedIn ? 'Push 通知を無効にする' : 'Push 通知を有効にする'} />
+                  </View>))}
+                </>
               ) : null}
-              <Button disabled={busy} onPress={signOut} title="ログアウト" />
-              <Button disabled={busy} onPress={() => requestDestructiveAuth('WITHDRAW_CONSENT')} title="同意を撤回する" />
-              <Button disabled={busy} onPress={() => requestDestructiveAuth('DELETE_ACCOUNT')} title="アカウントを削除する" />
+              {page === 'context' && !selectedLoop ? <Button onPress={() => setPage('tracking')} title="追跡内容へ戻る" /> : null}
+              {page === 'settings' ? (
+                <>
+                  <Text style={styles.heading}>設定・プライバシー</Text>
+                  <Text style={styles.copy}>入力のRawだけを削除しても、追跡中の件は残ります。</Text>
+                  {captures.filter((capture) => capture.status !== 'DELETED').map((capture) => (
+                    <Button key={capture.id} disabled={busy}
+                      onPress={() => requestDestructiveAuth('DELETE_RAW_CAPTURE', capture.id)}
+                      title={`Rawを削除: ${new Date(capture.created_at).toLocaleString('ja-JP')}`} />
+                  ))}
+                  {process.env.EXPO_PUBLIC_P1_PUSH_CLIENT_ENABLED === 'true' ? (
+                    <Button disabled={busy} onPress={togglePush}
+                      title={pushOptedIn ? 'Push 通知を無効にする' : 'Push 通知を有効にする'} />
+                  ) : null}
+                  <Button disabled={busy} onPress={signOut} title="ログアウト" />
+                  <Button disabled={busy} onPress={() => requestDestructiveAuth('WITHDRAW_CONSENT')} title="同意を撤回する" />
+                  <Button disabled={busy} onPress={() => requestDestructiveAuth('DELETE_ACCOUNT')} title="アカウントを削除する" />
+                  <Button onPress={() => setPage('home')} title="Homeへ戻る" />
+                </>
+              ) : null}
             </>
           ) : null}
           {recentAuthCode !== null ? (
@@ -436,7 +551,7 @@ export default function App() {
           {withdrawalProof ? (
             <>
               <Text style={styles.copy}>{destructiveAction === 'DELETE_RAW_CAPTURE'
-                ? '入力と関連する追跡を削除します。'
+                ? '入力のRawだけを削除します。追跡中の件は残ります。'
                 : destructiveAction === 'DELETE_ACCOUNT'
                   ? 'アカウントと関連データを削除します。'
                   : '同意を撤回すると、以後の保存・処理・配信を停止します。'}</Text>
@@ -444,6 +559,7 @@ export default function App() {
               <Button disabled={busy} onPress={() => { setWithdrawalProof(null); setCaptureToDelete(null); }} title="操作をやめる" />
             </>
           ) : null}
+          {notice ? <Text accessibilityLiveRegion="polite" style={styles.notice}>{notice}</Text> : null}
           {message ? <Text accessibilityRole="alert" style={styles.error}>{message}</Text> : null}
         </>
       ) : (
@@ -508,6 +624,17 @@ const styles = StyleSheet.create({
   copy: {
     marginBottom: 16,
     marginTop: 8,
+    textAlign: 'center',
+  },
+  heading: {
+    fontSize: 22,
+    fontWeight: '600',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  notice: {
+    color: '#205d3a',
+    marginTop: 16,
     textAlign: 'center',
   },
   error: {

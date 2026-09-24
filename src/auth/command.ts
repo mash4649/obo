@@ -73,6 +73,7 @@ export async function captureText(text: string): Promise<{ captureId: string; st
 
 export type OpenLoop = {
   id: string;
+  capture_id: string;
   title: string;
   expected_state_text: string;
   due_at: string | null;
@@ -99,7 +100,7 @@ export async function listOpenLoops(): Promise<OpenLoop[]> {
   const supabase = getSupabase();
   if (!supabase) throw new CommandError('認証設定がまだありません。');
   const { data, error } = await supabase.from('open_loops')
-    .select('id,title,expected_state_text,due_at,next_evaluation_at,confirmation_question,revision,activated_at,effective_state,status')
+    .select('id,capture_id,title,expected_state_text,due_at,next_evaluation_at,confirmation_question,revision,activated_at,effective_state,status')
     .order('created_at', { ascending: false });
   if (error) throw new CommandError('追跡中の件を読み込めませんでした。');
   return (data ?? []) as OpenLoop[];

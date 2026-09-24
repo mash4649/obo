@@ -2,7 +2,7 @@ import type { AiResult, ApprovedAdapterInput } from './interpret.ts';
 
 const MODEL = 'gpt-5.6-luna';
 const ENDPOINT = 'https://api.openai.com/v1/chat/completions';
-const SYSTEM = 'Extract an everyday task. Return JSON only. Do not mark completion. Ask at most one material question. Use null when a date or question is unknown.';
+const SYSTEM = 'Extract an everyday task. Return JSON only. Do not mark completion. Ask one question only when expectedState or nextEvaluationAt is missing, never both. Use null when a date or question is unknown.';
 
 export async function callOpenAi(
   approved: ApprovedAdapterInput,

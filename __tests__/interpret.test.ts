@@ -49,9 +49,9 @@ describe('L05 interpretation boundary', () => {
     expect(adapter).toHaveBeenCalledWith({ status: 'ALLOW', redactedText: 'buy paper', policyVersion: 'd07-r/1' });
   });
 
-  it('asks exactly one material question when interpretation needs confirmation', async () => {
+  it('holds an unsupported question instead of guessing which field to change', async () => {
     const adapter = jest.fn().mockResolvedValue({ interpretation: { ...interpretation, question: 'By when?' }, usage });
-    expect((await interpretCapture(input, adapter)).status).toBe('NEEDS_CONFIRMATION');
+    expect((await interpretCapture(input, adapter)).status).toBe('FAILED_SAFE');
   });
 
   it('holds interpretation until a next evaluation time exists', async () => {

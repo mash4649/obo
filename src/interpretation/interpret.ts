@@ -80,9 +80,10 @@ export async function interpretCapture(
       usage.inputTokens < 0 || usage.outputTokens < 0 || usage.inputTokens > 2500 || usage.outputTokens > 256) {
       return { status: 'FAILED_SAFE' };
     }
-    if (!interpretation.nextEvaluationAt) {
-      interpretation.question ??= '次にいつ確認しますか？';
-    }
+    if (!interpretation.expectedState.trim() && !interpretation.nextEvaluationAt) return { status: 'FAILED_SAFE' };
+    if (!interpretation.expectedState.trim()) interpretation.question = '何が済めばこの件は終わりですか？';
+    else if (!interpretation.nextEvaluationAt) interpretation.question = '次にいつ確認しますか？';
+    else if (interpretation.question) return { status: 'FAILED_SAFE' };
     return { status: interpretation.question ? 'NEEDS_CONFIRMATION' : 'OFFLOAD_READY', interpretation, usage };
   } catch {
     return { status: 'FAILED_SAFE' };
