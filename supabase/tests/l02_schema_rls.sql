@@ -5,10 +5,10 @@ values
   ('31111111-1111-4111-8111-111111111111', '31111111-1111-4111-8111-111111111111', 'Asia/Tokyo'),
   ('32222222-2222-4222-8222-222222222222', '32222222-2222-4222-8222-222222222222', 'Asia/Tokyo');
 
-insert into public.captures (id, account_id, sensitivity_class, external_ai_allowed)
+insert into public.captures (id, account_id, scope, sensitivity_class, external_ai_allowed)
 values
-  ('41111111-1111-4111-8111-111111111111', '31111111-1111-4111-8111-111111111111', 'PRIVATE', false),
-  ('42222222-2222-4222-8222-222222222222', '32222222-2222-4222-8222-222222222222', 'PRIVATE', false);
+  ('41111111-1111-4111-8111-111111111111', '31111111-1111-4111-8111-111111111111', 'SHOPPING', 'PRIVATE', false),
+  ('42222222-2222-4222-8222-222222222222', '32222222-2222-4222-8222-222222222222', 'SHOPPING', 'PRIVATE', false);
 
 insert into private.capture_raws (capture_id, account_id, raw_text)
 values ('41111111-1111-4111-8111-111111111111', '31111111-1111-4111-8111-111111111111', 'test raw');

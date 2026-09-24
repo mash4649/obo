@@ -4,7 +4,7 @@ jest.mock('../src/auth/supabase', () => ({
   getSupabase: () => ({ functions: { invoke: mockInvoke } }),
 }));
 
-import { captureText, CommandError, acceptConsent, getAuthState, verifyRecentAuth } from '../src/auth/command';
+import { captureText, CommandError, acceptConsent, getAuthState, localEvaluationDate, verifyRecentAuth } from '../src/auth/command';
 
 describe('command boundary', () => {
   beforeEach(() => {
@@ -38,12 +38,17 @@ describe('command boundary', () => {
   });
 
   it('sends a capture only through the server command boundary', async () => {
-    mockInvoke.mockResolvedValue({ data: { status: 'STORED' }, error: null });
+    mockInvoke.mockResolvedValue({ data: { captureId: 'capture-id', status: 'STORED' }, error: null });
 
-    await expect(captureText('SHOPPING', 'buy paper')).resolves.toBe('STORED');
+    await expect(captureText('SHOPPING', 'buy paper')).resolves.toEqual({ captureId: 'capture-id', status: 'STORED' });
 
     expect(mockInvoke).toHaveBeenCalledWith('command', {
       body: expect.objectContaining({ command: 'CAPTURE_TEXT', scope: 'SHOPPING', text: 'buy paper' }),
     });
+  });
+
+  it('rejects an invalid local evaluation date before a correction is sent', () => {
+    expect(() => localEvaluationDate('2026-02-30 09:00')).toThrow(CommandError);
+    expect(mockInvoke).not.toHaveBeenCalled();
   });
 });

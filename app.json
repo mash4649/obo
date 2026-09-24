@@ -7,6 +7,9 @@
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true
-    }
+    },
+    "plugins": [
+      "expo-notifications"
+    ]
   }
 }

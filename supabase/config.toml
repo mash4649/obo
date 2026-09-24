@@ -14,3 +14,6 @@ content_path = "./supabase/templates/magic_link.html"
 
 [functions.command]
 verify_jwt = true
+
+[functions.push]
+verify_jwt = false
