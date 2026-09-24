@@ -7,7 +7,6 @@ import { acceptConsent, ackOffloadReceipt, actOnLoop, captureText, correctLoop, 
 import { AuthError, requestEmailOtp, verifyEmailOtp } from './src/auth/emailOtp';
 import { getSupabase } from './src/auth/supabase';
 import { checkPushPermission, clearPushPreference, disablePush, enablePush, isPushOptedIn } from './src/push/registration';
-import { type CaptureScope } from './src/sensitivity/preflight';
 
 export default function App() {
   const [email, setEmail] = useState('');
@@ -23,7 +22,6 @@ export default function App() {
   const [destructiveAction, setDestructiveAction] = useState<'WITHDRAW_CONSENT' | 'DELETE_RAW_CAPTURE' | 'DELETE_ACCOUNT'>('WITHDRAW_CONSENT');
   const [captureToDelete, setCaptureToDelete] = useState<string | null>(null);
   const [captures, setCaptures] = useState<CaptureSummary[]>([]);
-  const [captureScope, setCaptureScope] = useState<CaptureScope>('GENERAL_ADMIN');
   const [captureBody, setCaptureBody] = useState('');
   const [openLoops, setOpenLoops] = useState<OpenLoop[]>([]);
   const [correctingLoopId, setCorrectingLoopId] = useState<string | null>(null);
@@ -255,7 +253,7 @@ export default function App() {
     setMessage(null);
 
     try {
-      const { captureId, status } = await captureText(captureScope, captureBody);
+      const { captureId, status } = await captureText(captureBody);
       setCaptureBody('');
       setMessage(status === 'STORED'
         ? '預かりました。追跡は確認後に始まります。'
@@ -363,16 +361,6 @@ export default function App() {
                 style={styles.input}
                 value={captureBody}
               />
-              <View style={styles.scopeRow}>
-                {(['SCHEDULE', 'HOUSEHOLD', 'SHOPPING', 'GENERAL_ADMIN'] as const).map((scope) => (
-                  <Button
-                    key={scope}
-                    color={scope === captureScope ? '#2255aa' : undefined}
-                    onPress={() => setCaptureScope(scope)}
-                    title={scope}
-                  />
-                ))}
-              </View>
               <Button disabled={busy || !captureBody.trim()} onPress={submitCapture} title="保存する" />
               <Button disabled={busy} onPress={() => refreshLoops().catch(() => setMessage('件を読み込めませんでした。'))} title="件を更新" />
               {openLoops.map((loop) => (
@@ -542,12 +530,5 @@ const styles = StyleSheet.create({
   switchText: {
     flex: 1,
     marginLeft: 8,
-  },
-  scopeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    justifyContent: 'center',
-    marginBottom: 12,
   },
 });

@@ -1,6 +1,5 @@
 import * as Crypto from 'expo-crypto';
 import { getSupabase } from './supabase';
-import { captureScopes, type CaptureScope } from '../sensitivity/preflight';
 
 export type AuthState = {
   account: { status: 'ACTIVE' | 'DELETION_PENDING' | 'DELETED' } | null;
@@ -53,15 +52,15 @@ export async function acceptConsent(timezone: string, adultDeclared: boolean): P
   });
 }
 
-export async function captureText(scope: CaptureScope, text: string): Promise<{ captureId: string; status: 'STORED' | 'FAILED_SAFE' }> {
-  if (!captureScopes.includes(scope) || !text.trim()) {
-    throw new CommandError('保存する内容と種類を確認してください。');
+export async function captureText(text: string): Promise<{ captureId: string; status: 'STORED' | 'FAILED_SAFE' }> {
+  if (!text.trim()) {
+    throw new CommandError('保存する内容を入力してください。');
   }
 
   const result = await invoke<{ captureId?: unknown; status?: unknown }>({
     command: 'CAPTURE_TEXT',
     idempotencyKey: idempotencyKey(),
-    scope,
+    scope: 'UNCATEGORIZED',
     text,
   });
 

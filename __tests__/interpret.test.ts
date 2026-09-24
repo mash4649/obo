@@ -1,7 +1,7 @@
 import { interpretCapture, redactForAi } from '../src/interpretation/interpret';
 import { aiCostUsd, callOpenAi } from '../src/interpretation/openai';
 
-const input = { scope: 'SHOPPING', text: 'buy paper', consentActive: true };
+const input = { scope: 'UNCATEGORIZED', text: 'buy paper', consentActive: true };
 const usage = { inputTokens: 20, outputTokens: 15, model: 'gpt-5.6-luna' };
 const interpretation = {
   title: 'Buy paper', expectedState: 'Paper is bought', dueAt: null,

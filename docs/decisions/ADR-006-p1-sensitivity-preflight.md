@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted
+Accepted（2026-09-24 Captureのジャンル選択を廃止）
 
 ## Date
 
@@ -12,9 +12,12 @@ Accepted
 
 P1はlow-risk everyday administrationだけを対象にし、Rawを外部AIへ送る前にSECRET/SENSITIVE/UNCLASSIFIEDを安全停止する必要がある。パックは広範な感度分類器やHuman Raw ProxyをP1に要求していない。
 
+Capture時のジャンル選択は安全判定や追跡方法を変えておらず、預ける前に利用者へ分類作業を課していた。
+
 ## Decision
 
-- Capture時にユーザーが次のscopeを一つ選ぶ: `SCHEDULE`（予定）、`HOUSEHOLD`（家事）、`SHOPPING`（買い物）、`GENERAL_ADMIN`（一般的な用事）。scopeはサーバー側allowlistで検証し、`captures`に記録する。
+- P1のCapture時にユーザーへジャンルを選ばせない。新しいCaptureのscopeは内部で`UNCATEGORIZED`と記録する。従来の`SCHEDULE`、`HOUSEHOLD`、`SHOPPING`、`GENERAL_ADMIN`は既存データと旧クライアントのために保持し、サーバー側allowlistで検証する。`UNCATEGORIZED`はジャンル未指定を表し、感度の`UNCLASSIFIED`とは別である。
+- scopeの値だけで安全性を推定しない。`UNCATEGORIZED`にも同じ文字数・SECRET/SENSITIVE判定、active consent、D07の外部AI送信条件を適用する。
 - 入力はtrim後のUnicode code point数で2,000文字を上限とする。超過は`UNCLASSIFIED`として安全停止し、外部AIへ送らない。
 - preflightはローカルで決定的に実行し、モデルや外部AIを分類器として使わない。
   - `SECRET`: password、OTP、recovery code、API key、authentication token等の明白な資格情報。通常処理を拒否する。
@@ -38,10 +41,14 @@ P1はlow-risk everyday administrationだけを対象にし、Rawを外部AIへ�
 
 却下。P1のlow-risk Core Promiseを検証できない。
 
+### ユーザーにジャンルを必須選択させる
+
+2026-09-24に廃止。選択した4種類で安全判定も追跡方法も変わらず、Captureの負担だけが増える。
+
 ## Consequences
 
 - L03は拒否fixtureの外部AI adapter到達回数が0であることを検証する。
-- scope enumと2,000文字上限はL04のCapture入力契約にも適用する。
+- 内部scope enumと2,000文字上限はL04のCapture入力契約にも適用する。ジャンル未指定はscope不正ではない。
 - D07で承認するAI provider/purpose/retentionが確定するまで、`PRIVATE`でも実送信を開始しない。
 
 ## Sources
@@ -53,5 +60,5 @@ P1はlow-risk everyday administrationだけを対象にし、Rawを外部AIへ�
 ## Verification
 
 - SECRET、SENSITIVE、UNCLASSIFIED、scope不正、2,001文字入力のfixtureは外部AI adapterへ到達しない。
-- 許可された4 scopeで、拒否シグナルのない2,000文字以内のfixtureだけがサーバーのPRIVATE遷移候補になる。
+- `UNCATEGORIZED`を含む許可されたscopeで、拒否シグナルのない2,000文字以内のfixtureだけがサーバーのPRIVATE遷移候補になる。
 - AI送信前にscope、active consent、`external_ai_allowed`、D07のprovider approvalを再検証する。

@@ -32,7 +32,7 @@ describe('command boundary', () => {
   });
 
   it('keeps an empty capture on device', async () => {
-    await expect(captureText('SHOPPING', '  ')).rejects.toBeInstanceOf(CommandError);
+    await expect(captureText('  ')).rejects.toBeInstanceOf(CommandError);
 
     expect(mockInvoke).not.toHaveBeenCalled();
   });
@@ -40,10 +40,10 @@ describe('command boundary', () => {
   it('sends a capture only through the server command boundary', async () => {
     mockInvoke.mockResolvedValue({ data: { captureId: 'capture-id', status: 'STORED' }, error: null });
 
-    await expect(captureText('SHOPPING', 'buy paper')).resolves.toEqual({ captureId: 'capture-id', status: 'STORED' });
+    await expect(captureText('buy paper')).resolves.toEqual({ captureId: 'capture-id', status: 'STORED' });
 
     expect(mockInvoke).toHaveBeenCalledWith('command', {
-      body: expect.objectContaining({ command: 'CAPTURE_TEXT', scope: 'SHOPPING', text: 'buy paper' }),
+      body: expect.objectContaining({ command: 'CAPTURE_TEXT', scope: 'UNCATEGORIZED', text: 'buy paper' }),
     });
   });
 

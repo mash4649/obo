@@ -7,12 +7,12 @@ insert into public.consents (account_id, consent_type, version, status, adult_de
 values ('61111111-1111-4111-8111-111111111111', 'P1_CORE', 'p1-test-v1', 'ACCEPTED', true);
 
 select public.command_capture_text(
-  '61111111-1111-4111-8111-111111111111', 'SHOPPING', 'buy paper', 'PRIVATE',
+  '61111111-1111-4111-8111-111111111111', 'UNCATEGORIZED', 'buy paper', 'PRIVATE',
   'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 );
 
 select public.command_capture_text(
-  '61111111-1111-4111-8111-111111111111', 'SHOPPING', 'buy paper', 'PRIVATE',
+  '61111111-1111-4111-8111-111111111111', 'UNCATEGORIZED', 'buy paper', 'PRIVATE',
   'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
 );
 
@@ -20,6 +20,10 @@ do $$
 begin
   if (select count(*) from public.captures where account_id = '61111111-1111-4111-8111-111111111111') <> 1 then
     raise exception 'duplicate capture was created';
+  end if;
+
+  if (select scope from public.captures where account_id = '61111111-1111-4111-8111-111111111111') <> 'UNCATEGORIZED' then
+    raise exception 'uncategorized capture was not stored';
   end if;
 
   if (select count(*) from private.capture_raws where account_id = '61111111-1111-4111-8111-111111111111') <> 1 then

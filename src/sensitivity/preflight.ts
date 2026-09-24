@@ -1,4 +1,4 @@
-export const captureScopes = ['SCHEDULE', 'HOUSEHOLD', 'SHOPPING', 'GENERAL_ADMIN'] as const;
+export const captureScopes = ['UNCATEGORIZED', 'SCHEDULE', 'HOUSEHOLD', 'SHOPPING', 'GENERAL_ADMIN'] as const;
 
 export type CaptureScope = typeof captureScopes[number];
 export type SensitivityClass = 'PRIVATE' | 'SENSITIVE' | 'SECRET' | 'UNCLASSIFIED';
