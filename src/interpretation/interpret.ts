@@ -1,4 +1,4 @@
-import { preflightCapture } from '../sensitivity/preflight';
+import { preflightCapture } from '../sensitivity/preflight.ts';
 
 export type ApprovedAdapterInput = {
   status: 'ALLOW';

@@ -1,4 +1,4 @@
-import type { AiResult, ApprovedAdapterInput } from './interpret';
+import type { AiResult, ApprovedAdapterInput } from './interpret.ts';
 
 const MODEL = 'gpt-5.6-luna';
 const ENDPOINT = 'https://api.openai.com/v1/chat/completions';
