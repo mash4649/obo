@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "ios": {
+      "bundleIdentifier": "com.mash4649.obo.preview",
       "supportsTablet": true
     },
     "plugins": [
