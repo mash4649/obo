@@ -286,6 +286,7 @@ Deno.serve(async (req) => {
   }
 
   if (body.command === 'START_RECENT_AUTH') {
+    if (body.action === 'DELETE_RAW_CAPTURE') return response({ error: 'REQUEST_DENIED' }, 400);
     const { error: challengeError } = await admin.rpc('command_start_recent_auth', {
       p_action_kind: body.action,
       p_auth_user_id: user.id,
@@ -331,13 +332,11 @@ Deno.serve(async (req) => {
   }
 
   if (body.command === 'DELETE_RAW_CAPTURE') {
-    if (body.action !== 'DELETE_RAW_CAPTURE' || !body.captureId || !UUID.test(body.captureId) ||
-        !body.proofId || !UUID.test(body.proofId)) {
+    if (body.action !== 'DELETE_RAW_CAPTURE' || !body.captureId || !UUID.test(body.captureId)) {
       return response({ error: 'REQUEST_DENIED' }, 400);
     }
     const { error: beginError } = await admin.rpc('command_begin_raw_deletion', {
       p_auth_user_id: user.id, p_capture_id: body.captureId,
-      p_session_id: currentSessionId, p_proof_id: body.proofId,
     });
     if (beginError) return response({ error: 'REQUEST_DENIED' }, 403);
     const { error: finishError } = await admin.rpc('command_finish_raw_deletion', {

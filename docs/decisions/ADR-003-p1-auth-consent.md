@@ -20,7 +20,8 @@ SupabaseのEmail OTPとMagic Linkは同じpasswordless認証経路を使う。�
 - P1参加者のメールアドレスは事前登録する。未知メールアドレスによる自動アカウント作成を拒否する。
 - 初回OTP認証後、18歳以上の自己申告を必須にする。生年月日・年齢は保存しない。同意文書version、成人自己申告、時刻は追記専用で記録する。
 - 同意撤回時は、新規Capture、AI処理、評価、配信を直ちに停止し、全端末をログアウトしてアカウントを`DELETION_PENDING`へ遷移させる。Raw/Accountの物理削除、保持、監査の詳細はD11で定める。同意撤回をSOCまたはRetireとして数えない。
-- `WITHDRAW_CONSENT`、`DELETE_RAW_CAPTURE`、`DELETE_ACCOUNT`は操作直前の再認証を必須にする。再認証は、対象account・session・action kindに束縛した専用Email OTP challengeをアプリケーション側で発行・検証する。challengeは10分、単回有効とし、成功したrecent-auth証跡をサーバー側に記録してコマンド境界で検証する。
+- `WITHDRAW_CONSENT`と`DELETE_ACCOUNT`は操作直前の再認証を必須にする。再認証は、対象account・session・action kindに束縛した専用Email OTP challengeをアプリケーション側で発行・検証する。challengeは10分、単回有効とし、成功したrecent-auth証跡をサーバー側に記録してコマンド境界で検証する。
+- `DELETE_RAW_CAPTURE`はログイン中の本人が対象を確認して実行できる。サーバーはaccount・captureの所有関係と有効なsessionを確認し、Rawだけを削除する。2026-09-25に、削除を妨げるメール再認証の負担をなくすため変更した。
 - Supabaseの`reauthenticate()`はパスワード変更向けの機能であり、このpasswordless破壊的操作の要件充足には使わない。
 - OTP本文、OTP値、メールアドレス、同意本文、recent-authの秘密情報をアプリ、関数、クラッシュ報告のログに出力しない。
 
@@ -63,5 +64,6 @@ SupabaseのEmail OTPとMagic Linkは同じpasswordless認証経路を使う。�
 - Unknown email cannot create an account or receive a P1 login session.
 - OTP is rejected after 10 minutes, after use, and before the 60-second resend window; values never appear in logs.
 - An authenticated user cannot continue Capture, AI, evaluation, or delivery after consent withdrawal from any device.
-- Each destructive command rejects a missing, expired, used, account-mismatched, session-mismatched, or action-mismatched recent-auth proof.
+- Consent withdrawal and account deletion reject a missing, expired, used, account-mismatched, session-mismatched, or action-mismatched recent-auth proof.
+- Raw deletion rejects unauthenticated and cross-account requests, requires a confirmation in the app, and preserves linked tracking.
 - Test evidence shows no birthdate or age value is persisted, while consent version, adult declaration, and timestamp are auditable.

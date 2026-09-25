@@ -9,7 +9,7 @@ export type AuthState = {
   requiredConsentVersion: string | null;
 };
 
-type DestructiveAction = 'WITHDRAW_CONSENT' | 'DELETE_RAW_CAPTURE' | 'DELETE_ACCOUNT';
+type DestructiveAction = 'WITHDRAW_CONSENT' | 'DELETE_ACCOUNT';
 
 export class CommandError extends Error {}
 
@@ -140,9 +140,9 @@ export async function recordOwnership(loopId: string, result: 'OWNED' | 'PARALLE
   await invoke({ command: 'RECORD_OWNERSHIP_MEASUREMENT', loopId, ownershipResult: result });
 }
 
-export async function deleteRawCapture(captureId: string, proofId: string): Promise<'DELETED' | 'DELETION_PENDING'> {
+export async function deleteRawCapture(captureId: string): Promise<'DELETED' | 'DELETION_PENDING'> {
   const result = await invoke<{ status?: unknown }>({
-    action: 'DELETE_RAW_CAPTURE', command: 'DELETE_RAW_CAPTURE', captureId, proofId,
+    action: 'DELETE_RAW_CAPTURE', command: 'DELETE_RAW_CAPTURE', captureId,
   });
   if (result.status !== 'DELETED' && result.status !== 'DELETION_PENDING') throw new CommandError('削除を開始できませんでした。');
   return result.status;

@@ -22,7 +22,7 @@ export default function App() {
   const [adultDeclared, setAdultDeclared] = useState(false);
   const [recentAuthCode, setRecentAuthCode] = useState<string | null>(null);
   const [withdrawalProof, setWithdrawalProof] = useState<string | null>(null);
-  const [destructiveAction, setDestructiveAction] = useState<'WITHDRAW_CONSENT' | 'DELETE_RAW_CAPTURE' | 'DELETE_ACCOUNT'>('WITHDRAW_CONSENT');
+  const [destructiveAction, setDestructiveAction] = useState<'WITHDRAW_CONSENT' | 'DELETE_ACCOUNT'>('WITHDRAW_CONSENT');
   const [captureToDelete, setCaptureToDelete] = useState<string | null>(null);
   const [captures, setCaptures] = useState<CaptureSummary[]>([]);
   const [captureBody, setCaptureBody] = useState('');
@@ -174,7 +174,7 @@ export default function App() {
     }
   }
 
-  async function requestDestructiveAuth(action: 'WITHDRAW_CONSENT' | 'DELETE_RAW_CAPTURE' | 'DELETE_ACCOUNT', captureId: string | null = null) {
+  async function requestDestructiveAuth(action: 'WITHDRAW_CONSENT' | 'DELETE_ACCOUNT') {
     setBusy(true);
     setMessage(null);
     setNotice(null);
@@ -182,7 +182,7 @@ export default function App() {
     try {
       await startRecentAuth(action);
       setDestructiveAction(action);
-      setCaptureToDelete(captureId);
+      setCaptureToDelete(null);
       setRecentAuthCode('');
     } catch (error) {
       setMessage(error instanceof CommandError ? error.message : '再認証を開始できませんでした。');
@@ -219,41 +219,51 @@ export default function App() {
     setNotice(null);
 
     try {
-      if (destructiveAction === 'DELETE_RAW_CAPTURE' && captureToDelete) {
-        const status = await deleteRawCapture(captureToDelete, withdrawalProof);
-        setNotice(status === 'DELETED' ? '入力のRawを削除しました。' : 'Rawの削除を続けています。');
-        await refreshLoops();
+      let status: 'DELETED' | 'DELETION_PENDING' = 'DELETION_PENDING';
+      if (destructiveAction === 'DELETE_ACCOUNT') {
+        status = await deleteAccount(withdrawalProof);
       } else {
-        if (destructiveAction === 'DELETE_RAW_CAPTURE') throw new CommandError('削除対象を確認できませんでした。');
-        let status: 'DELETED' | 'DELETION_PENDING' = 'DELETION_PENDING';
-        if (destructiveAction === 'DELETE_ACCOUNT') {
-          status = await deleteAccount(withdrawalProof);
-        } else {
-          await withdrawConsent(withdrawalProof);
-        }
-        await clearPushPreference();
-        setPushOptedIn(false);
-        setAuthState(null);
-        setEmail('');
-        setCode('');
-        setCodeSentTo(null);
-        setCaptureBody('');
-        setCorrectedState('');
-        setCorrectedNextEvaluation('');
-        setCorrectingLoopId(null);
-        setVerified(false);
-        setOpenLoops([]);
-        setCaptures([]);
-        setAttentionLoopIds([]);
-        setSocLoopIds([]);
-        setMeasuredLoopIds([]);
-        setMessage(status === 'DELETED' ? 'アカウントを削除しました。' : '削除を続けています。');
+        await withdrawConsent(withdrawalProof);
       }
+      await clearPushPreference();
+      setPushOptedIn(false);
+      setAuthState(null);
+      setEmail('');
+      setCode('');
+      setCodeSentTo(null);
+      setCaptureBody('');
+      setCorrectedState('');
+      setCorrectedNextEvaluation('');
+      setCorrectingLoopId(null);
+      setVerified(false);
+      setOpenLoops([]);
+      setCaptures([]);
+      setAttentionLoopIds([]);
+      setSocLoopIds([]);
+      setMeasuredLoopIds([]);
+      setMessage(status === 'DELETED' ? 'アカウントを削除しました。' : '削除を続けています。');
       setRecentAuthCode(null);
       setWithdrawalProof(null);
       setCaptureToDelete(null);
     } catch (error) {
       setMessage(error instanceof CommandError ? error.message : '操作を完了できませんでした。');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function confirmRawDeletion() {
+    if (!captureToDelete) return;
+    setBusy(true);
+    setMessage(null);
+    setNotice(null);
+    try {
+      const status = await deleteRawCapture(captureToDelete);
+      setCaptureToDelete(null);
+      setNotice(status === 'DELETED' ? '入力のRawを削除しました。' : 'Rawの削除を続けています。');
+      await refreshLoops().catch(() => setMessage('削除しましたが、一覧を更新できませんでした。'));
+    } catch (error) {
+      setMessage(error instanceof CommandError ? error.message : 'Rawを削除できませんでした。');
     } finally {
       setBusy(false);
     }
@@ -365,6 +375,7 @@ export default function App() {
 
   const consentIsCurrent = authState?.consent?.status === 'ACCEPTED'
     && authState.consent.version === authState.requiredConsentVersion;
+  const selectedCapture = captures.find((capture) => capture.id === captureToDelete);
   const selectedLoop = openLoops.find((loop) => loop.id === selectedLoopId);
   const nextLoop = openLoops.find((loop) => loop.status === 'ACTIVE' && attentionLoopIds.includes(loop.id))
     ?? openLoops.find((loop) => loop.status === 'ACTIVE' && !!loop.confirmation_question)
@@ -513,20 +524,31 @@ export default function App() {
               {page === 'settings' ? (
                 <>
                   <Text style={styles.heading}>設定・プライバシー</Text>
-                  <Text style={styles.copy}>入力のRawだけを削除しても、追跡中の件は残ります。</Text>
-                  {captures.filter((capture) => capture.status !== 'DELETED').map((capture) => (
-                    <Button key={capture.id} disabled={busy}
-                      onPress={() => requestDestructiveAuth('DELETE_RAW_CAPTURE', capture.id)}
-                      title={`Rawを削除: ${new Date(capture.created_at).toLocaleString('ja-JP')}`} />
-                  ))}
-                  {process.env.EXPO_PUBLIC_P1_PUSH_CLIENT_ENABLED === 'true' ? (
-                    <Button disabled={busy} onPress={togglePush}
-                      title={pushOptedIn ? 'Push 通知を無効にする' : 'Push 通知を有効にする'} />
-                  ) : null}
-                  <Button disabled={busy} onPress={signOut} title="ログアウト" />
-                  <Button disabled={busy} onPress={() => requestDestructiveAuth('WITHDRAW_CONSENT')} title="同意を撤回する" />
-                  <Button disabled={busy} onPress={() => requestDestructiveAuth('DELETE_ACCOUNT')} title="アカウントを削除する" />
-                  <Button onPress={() => setPage('home')} title="Homeへ戻る" />
+                  {selectedCapture ? (
+                    <>
+                      <Text style={styles.copy}>Rawを削除: {new Date(selectedCapture.created_at).toLocaleString('ja-JP')}</Text>
+                      <Text style={styles.copy}>入力のRawだけを削除します。追跡中の件は残ります。</Text>
+                      <Button disabled={busy} onPress={confirmRawDeletion} title="このRawを削除する" />
+                      <Button disabled={busy} onPress={() => { setCaptureToDelete(null); setMessage(null); }} title="やめる" />
+                    </>
+                  ) : (
+                    <>
+                      <Text style={styles.copy}>入力のRawだけを削除しても、追跡中の件は残ります。</Text>
+                      {captures.filter((capture) => capture.status !== 'DELETED').map((capture) => (
+                        <Button key={capture.id} disabled={busy}
+                          onPress={() => { setCaptureToDelete(capture.id); setMessage(null); setNotice(null); }}
+                          title={`Rawを削除: ${new Date(capture.created_at).toLocaleString('ja-JP')}`} />
+                      ))}
+                      {process.env.EXPO_PUBLIC_P1_PUSH_CLIENT_ENABLED === 'true' ? (
+                        <Button disabled={busy} onPress={togglePush}
+                          title={pushOptedIn ? 'Push 通知を無効にする' : 'Push 通知を有効にする'} />
+                      ) : null}
+                      <Button disabled={busy} onPress={signOut} title="ログアウト" />
+                      <Button disabled={busy} onPress={() => requestDestructiveAuth('WITHDRAW_CONSENT')} title="同意を撤回する" />
+                      <Button disabled={busy} onPress={() => requestDestructiveAuth('DELETE_ACCOUNT')} title="アカウントを削除する" />
+                      <Button onPress={() => setPage('home')} title="Homeへ戻る" />
+                    </>
+                  )}
                 </>
               ) : null}
             </>
@@ -550,9 +572,7 @@ export default function App() {
           ) : null}
           {withdrawalProof ? (
             <>
-              <Text style={styles.copy}>{destructiveAction === 'DELETE_RAW_CAPTURE'
-                ? '入力のRawだけを削除します。追跡中の件は残ります。'
-                : destructiveAction === 'DELETE_ACCOUNT'
+              <Text style={styles.copy}>{destructiveAction === 'DELETE_ACCOUNT'
                   ? 'アカウントと関連データを削除します。'
                   : '同意を撤回すると、以後の保存・処理・配信を停止します。'}</Text>
               <Button disabled={busy} onPress={confirmDestructiveAction} title="操作を確定する" />

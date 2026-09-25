@@ -9,17 +9,6 @@ select public.command_capture_text(
   '91111111-1111-4111-8111-222222222222'
 );
 
-insert into private.auth_challenges (
-  account_id, auth_user_id, session_id, action_kind, expires_at
-) values (
-  '91111111-1111-4111-8111-111111111111',
-  '91111111-1111-4111-8111-111111111111', 'test-session', 'DELETE_RAW_CAPTURE', now() + interval '10 minutes'
-);
-insert into private.recent_auth_proofs (
-  challenge_id, account_id, auth_user_id, session_id, action_kind, expires_at
-) select id, account_id, auth_user_id, session_id, action_kind, expires_at
-  from private.auth_challenges where account_id = '91111111-1111-4111-8111-111111111111';
-
 create function private.fail_raw_delete_fixture()
 returns trigger language plpgsql as $$
 begin
@@ -54,13 +43,11 @@ create trigger fail_raw_delete_fixture before delete on private.capture_raws
 do $$
 declare
   v_capture uuid;
-  v_proof uuid;
 begin
   select id into v_capture from public.captures
     where account_id = '91111111-1111-4111-8111-111111111111' and status = 'STORED';
-  select id into v_proof from private.recent_auth_proofs where account_id = '91111111-1111-4111-8111-111111111111';
   perform public.command_begin_raw_deletion(
-    '91111111-1111-4111-8111-111111111111', v_capture, 'test-session', v_proof
+    '91111111-1111-4111-8111-111111111111', v_capture
   );
   if (select status from public.captures where id = v_capture) <> 'DELETION_PENDING' or
      exists (select 1 from public.command_interpretation_source('91111111-1111-4111-8111-111111111111', v_capture)) then
