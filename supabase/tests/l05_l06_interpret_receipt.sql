@@ -39,6 +39,9 @@ begin
   if public.command_ack_offload_receipt('71111111-1111-4111-8111-111111111111', v_loop, 1) <> 'ACKED' then
     raise exception 'receipt acknowledgement failed';
   end if;
+  if exists (select 1 from private.capture_raws where capture_id = v_capture) then
+    raise exception 'acknowledged Raw was not deleted';
+  end if;
   perform public.command_ack_offload_receipt('71111111-1111-4111-8111-111111111111', v_loop, 1);
   if (select count(*) from public.loop_events where loop_id = v_loop and event_type = 'OFFLOAD_RECEIPT_ACKED') <> 1 then
     raise exception 'duplicate receipt acknowledgement was created';

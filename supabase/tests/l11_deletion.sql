@@ -2,6 +2,8 @@ begin;
 
 insert into public.accounts (id, auth_user_id, timezone)
 values ('91111111-1111-4111-8111-111111111111', '91111111-1111-4111-8111-111111111111', 'Asia/Tokyo');
+insert into public.accounts (id, auth_user_id, timezone)
+values ('92222222-2222-4222-8222-222222222222', '92222222-2222-4222-8222-222222222222', 'Asia/Tokyo');
 insert into public.consents (account_id, consent_type, version, status, adult_declared)
 values ('91111111-1111-4111-8111-111111111111', 'P1_CORE', 'p1-test-v1', 'ACCEPTED', true);
 select public.command_capture_text(
@@ -32,9 +34,6 @@ begin
     'Renew card', 'Card is renewed', null, now() + interval '1 day', null,
     'gpt-5.6-luna', 20, 15, 0.000022
   );
-  perform public.command_ack_offload_receipt('91111111-1111-4111-8111-111111111111', v_loop, 1);
-  perform public.command_loop_action('91111111-1111-4111-8111-111111111111', v_loop, 'MARK_DONE');
-  perform public.command_record_ownership('91111111-1111-4111-8111-111111111111', v_loop, 'OWNED');
 end;
 $$;
 create trigger fail_raw_delete_fixture before delete on private.capture_raws
@@ -43,9 +42,19 @@ create trigger fail_raw_delete_fixture before delete on private.capture_raws
 do $$
 declare
   v_capture uuid;
+  v_loop uuid;
+  v_ack text;
 begin
-  select id into v_capture from public.captures
-    where account_id = '91111111-1111-4111-8111-111111111111' and status = 'STORED';
+  select c.id, l.id into v_capture, v_loop from public.captures c
+    join public.open_loops l on l.capture_id = c.id
+    where c.account_id = '91111111-1111-4111-8111-111111111111'
+      and c.status = 'OFFLOAD_READY' and l.status = 'ACTIVE';
+  if v_capture is null or v_loop is null then raise exception 'active loop fixture unavailable'; end if;
+  begin
+    perform public.command_begin_raw_deletion('92222222-2222-4222-8222-222222222222', v_capture);
+    raise exception 'cross-account Raw deletion was allowed';
+  exception when sqlstate '42501' then null;
+  end;
   perform public.command_begin_raw_deletion(
     '91111111-1111-4111-8111-111111111111', v_capture
   );
@@ -65,9 +74,18 @@ begin
   drop trigger fail_raw_delete_fixture on private.capture_raws;
   perform public.command_finish_raw_deletion(v_capture);
   if (select status from public.captures where id = v_capture) <> 'DELETED' or
-     exists (select 1 from private.capture_raws where capture_id = v_capture) then
-    raise exception 'Raw deletion was not completed';
+     exists (select 1 from private.capture_raws where capture_id = v_capture) or
+     (select status from public.open_loops where id = v_loop) <> 'ACTIVE' or
+     not exists (select 1 from public.loop_events where loop_id = v_loop and event_type = 'OFFLOAD_READY') then
+    raise exception 'Raw deletion removed tracking or left Raw behind';
   end if;
+  v_ack := public.command_ack_offload_receipt('91111111-1111-4111-8111-111111111111', v_loop, 1);
+  if v_ack <> 'ACKED' or
+     (select activated_at from public.open_loops where id = v_loop) is null then
+    raise exception 'receipt failed after Raw deletion';
+  end if;
+  perform public.command_loop_action('91111111-1111-4111-8111-111111111111', v_loop, 'MARK_DONE');
+  perform public.command_record_ownership('91111111-1111-4111-8111-111111111111', v_loop, 'OWNED');
 end;
 $$;
 
