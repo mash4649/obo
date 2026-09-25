@@ -292,6 +292,7 @@ Deno.serve(async (req) => {
       p_session_id: currentSessionId,
     });
 
+    if (challengeError?.code === '42901') return response({ status: 'RETRY_LATER' });
     if (challengeError || !user.email) {
       return response({ error: 'REQUEST_DENIED' }, 403);
     }
@@ -301,6 +302,7 @@ Deno.serve(async (req) => {
       options: { shouldCreateUser: false },
     });
 
+    if (otpError?.code === 'over_email_send_rate_limit') return response({ status: 'RETRY_LATER' });
     return otpError ? response({ error: 'REQUEST_DENIED' }, 503) : response({ status: 'OTP_SENT' });
   }
 

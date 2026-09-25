@@ -201,7 +201,11 @@ export async function ackOffloadReceipt(loopId: string, basisRevision: number): 
 }
 
 export async function startRecentAuth(action: DestructiveAction): Promise<void> {
-  await invoke({ action, command: 'START_RECENT_AUTH' });
+  const result = await invoke<{ status?: unknown }>({ action, command: 'START_RECENT_AUTH' });
+  if (result.status === 'RETRY_LATER') {
+    throw new CommandError('認証メールは1分間隔で送れます。少し待ってからもう一度お試しください。');
+  }
+  if (result.status !== 'OTP_SENT') throw new CommandError('再認証を開始できませんでした。');
 }
 
 export async function verifyRecentAuth(action: DestructiveAction, code: string): Promise<string> {

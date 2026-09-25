@@ -177,6 +177,7 @@ export default function App() {
   async function requestDestructiveAuth(action: 'WITHDRAW_CONSENT' | 'DELETE_RAW_CAPTURE' | 'DELETE_ACCOUNT', captureId: string | null = null) {
     setBusy(true);
     setMessage(null);
+    setNotice(null);
 
     try {
       await startRecentAuth(action);
@@ -271,7 +272,6 @@ export default function App() {
         setMessage('この内容は処理できません。危険情報を除いて、必要なら入力し直してください。');
         return;
       }
-      setNotice('預かりました。内容は保存されています。');
       setPage('receipt');
       await refreshLoops().catch(() => setMessage('保存しましたが、表示を更新できませんでした。'));
       if (process.env.EXPO_PUBLIC_P1_AI_ENABLED === 'true') {
@@ -411,7 +411,7 @@ export default function App() {
                   <Button onPress={() => setPage('capture')} title="預ける" />
                   <Button disabled={busy} onPress={() => refreshLoops().catch(() => setMessage('件を読み込めませんでした。'))} title="表示を更新" />
                   <Button onPress={() => setPage('tracking')} title="OBOが追っていること" />
-                  <Button onPress={() => setPage('settings')} title="設定・プライバシー" />
+                  <Button onPress={() => { setNotice(null); setMessage(null); setPage('settings'); }} title="設定・プライバシー" />
                 </>
               ) : null}
               {page === 'capture' ? (
