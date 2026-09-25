@@ -21,10 +21,10 @@ begin
     'Buy paper', 'Paper is bought', null, now() + interval '1 day', null,
     'gpt-5.6-luna', 20, 15, 0.000022
   );
+  perform private.tag_p1_eligible_loop(v_loop, 'a1111111-1111-4111-8111-333333333333', 'fixture');
   perform public.command_ack_offload_receipt('a1111111-1111-4111-8111-111111111111', v_loop, 1);
   perform public.command_loop_action('a1111111-1111-4111-8111-111111111111', v_loop, 'MARK_DONE');
   perform public.command_record_ownership('a1111111-1111-4111-8111-111111111111', v_loop, 'OWNED');
-  perform private.tag_p1_eligible_loop(v_loop, 'a1111111-1111-4111-8111-333333333333', 'fixture');
   select * into v_report from private.p1_loop_report(now() + interval '8 days') where loop_id = v_loop;
   if not v_report.activation_valid or not v_report.matured or not v_report.valid_soc or
      not v_report.matured_success or v_report.ownership_result <> 'OWNED' or
