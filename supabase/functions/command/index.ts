@@ -309,7 +309,7 @@ Deno.serve(async (req) => {
       return response({ error: 'REQUEST_DENIED' }, 400);
     }
 
-    const { error: otpError } = await admin.auth.verifyOtp({
+    const { error: otpError } = await caller.auth.verifyOtp({
       email: user.email,
       token: body.code,
       type: 'email',
