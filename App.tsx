@@ -379,7 +379,9 @@ export default function App() {
   const selectedLoop = openLoops.find((loop) => loop.id === selectedLoopId);
   const nextLoop = openLoops.find((loop) => loop.status === 'ACTIVE' && attentionLoopIds.includes(loop.id))
     ?? openLoops.find((loop) => loop.status === 'ACTIVE' && !!loop.confirmation_question)
-    ?? openLoops.find((loop) => loop.status === 'ACTIVE' && !loop.activated_at);
+    ?? (process.env.EXPO_PUBLIC_P1_TRACKING_ENABLED === 'true'
+      ? openLoops.find((loop) => loop.status === 'ACTIVE' && !loop.activated_at)
+      : undefined);
 
   return (
     <View style={styles.screen}>
@@ -411,7 +413,9 @@ export default function App() {
                 <>
                   <Text style={styles.copy}>{nextLoop
                     ? '確認が必要な件があります。'
-                    : captures.some((capture) => capture.status === 'STORED')
+                    : captures.some((capture) => capture.status === 'STORED') ||
+                      (process.env.EXPO_PUBLIC_P1_TRACKING_ENABLED !== 'true' &&
+                        openLoops.some((loop) => loop.status === 'ACTIVE' && !loop.activated_at))
                       ? '保存された入力があります。追跡はまだ始まっていません。'
                       : captures.some((capture) => capture.status === 'FAILED_SAFE')
                         ? '処理できなかった入力があります。必要なら預け直してください。'
